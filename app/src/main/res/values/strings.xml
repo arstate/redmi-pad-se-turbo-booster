@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Turbo Booster</string>
+    <string name="super_performance_mode">Super Performance Mode</string>
+    <string name="super_performance_desc">Locks Snapdragon 680 to peak clocks, disables thermal throttling, bypasses eMMC with RAM caching, locks 90Hz, and optimizes GPU rendering.</string>
+</resources>
