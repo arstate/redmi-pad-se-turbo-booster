@@ -115,6 +115,10 @@ object TurboBoosterManager {
         runStep("setprop debug.sf.set_binder_thread_rt 1", "SurfaceFlinger RT Binder Thread -> 1")
         runStep("setprop debug.sf.enable_adpf_cpu_hint 1", "SurfaceFlinger ADPF CPU Hint -> 1")
 
+        // 11. Ergonomic Touch Delays (Fix Accidental Long-Press & Menu Popups)
+        runStep("settings put secure long_press_timeout 400", "Touch Long-Press Delay -> 400ms (Normal)")
+        runStep("settings put secure multi_press_timeout 300", "Touch Multi-Press Delay -> 300ms (Normal)")
+
         if (allSucceeded) {
             setTurboActive(context, true)
         }
@@ -174,6 +178,8 @@ object TurboBoosterManager {
         runStep("setprop debug.sqlite.syncmode \"\"", "Reset SQLite Sync Mode")
         runStep("setprop debug.sf.set_binder_thread_rt 0", "Reset SurfaceFlinger RT Binder")
         runStep("setprop debug.sf.enable_adpf_cpu_hint 0", "Reset SurfaceFlinger ADPF Hint")
+        runStep("settings put secure long_press_timeout 400", "Reset Long-Press Delay (400ms Normal)")
+        runStep("settings put secure multi_press_timeout 300", "Reset Multi-Press Delay (300ms Normal)")
 
         setTurboActive(context, false)
         return allSucceeded
