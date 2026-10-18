@@ -127,7 +127,6 @@ object TurboBoosterManager {
         // 12. Extract & Deploy Bundled APK Shell Scripts to Internal Storage & SDCard
         try {
             ScriptInstaller.extractAllScripts(context)
-            runStep("chmod -R 755 /data/user/0/com.arya.turbobooster/files/scripts", "Deploy Bundled APK Scripts")
         } catch (_: Throwable) {}
 
         // 13. Quad Speaker 3D Surround & Dolby Atmos Bitstream Unlock

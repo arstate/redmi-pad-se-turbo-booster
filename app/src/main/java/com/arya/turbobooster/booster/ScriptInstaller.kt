@@ -57,19 +57,21 @@ object ScriptInstaller {
         onLog: ((LogEntry) -> Unit)? = null
     ): Boolean {
         val timeFormat = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
-        val scriptFile = File(File(context.filesDir, "scripts"), scriptName)
-
-        if (!scriptFile.exists()) {
-            extractAllScripts(context)
-        }
-
-        if (!scriptFile.exists()) {
+        val scriptContent = try {
+            val file = File(File(context.filesDir, "scripts"), scriptName)
+            if (file.exists()) {
+                file.readText()
+            } else {
+                context.assets.open("scripts/$scriptName").bufferedReader().use { it.readText() }
+            }
+        } catch (t: Throwable) {
             val ts = timeFormat.format(java.util.Date())
-            onLog?.invoke(LogEntry(ts, "Run Script: $scriptName", "FAILED: Script file not found", false))
+            onLog?.invoke(LogEntry(ts, "Run Script: $scriptName", "FAILED: ${t.message}", false))
             return false
         }
 
-        val cmd = "sh ${scriptFile.absolutePath}"
+        val base64 = android.util.Base64.encodeToString(scriptContent.toByteArray(Charsets.UTF_8), android.util.Base64.NO_WRAP)
+        val cmd = "echo '$base64' | base64 -d > /data/local/tmp/$scriptName && chmod 755 /data/local/tmp/$scriptName && sh /data/local/tmp/$scriptName"
         val ts = timeFormat.format(java.util.Date())
         val res = ShellExecutor.execute(cmd, requirePrivileged = true)
         val out = if (res.stdout.isNotBlank()) res.stdout else res.stderr
