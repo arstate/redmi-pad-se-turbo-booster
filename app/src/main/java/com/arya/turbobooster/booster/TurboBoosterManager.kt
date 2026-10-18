@@ -111,6 +111,11 @@ object TurboBoosterManager {
         runStep("echo '$chromeFlags' > /data/local/tmp/chrome-command-line && chmod 644 /data/local/tmp/chrome-command-line", "Inject Chrome Anti-Reload Flags")
         runStep("cmd game set --downscale 0.85 com.android.chrome", "Chrome Resolution Scaling -> 0.85x")
 
+        // 9b. Via Browser & System WebView GPU Acceleration Flags
+        val webviewFlags = "_ --enable-gpu-rasterization --enable-zero-copy --ignore-gpu-blocklist --enable-features=SmoothScrolling,ParallelDownloading"
+        runStep("echo '$webviewFlags' > /data/local/tmp/webview-command-line && chmod 644 /data/local/tmp/webview-command-line", "Inject WebView GPU Flags (Via Browser)")
+        runStep("cmd game set --downscale 0.9 mark.via.gp", "Via Browser Scaling -> 0.9x")
+
         // 10. SurfaceFlinger Realtime Binder Thread & ADPF CPU Hint
         runStep("setprop debug.sf.set_binder_thread_rt 1", "SurfaceFlinger RT Binder Thread -> 1")
         runStep("setprop debug.sf.enable_adpf_cpu_hint 1", "SurfaceFlinger ADPF CPU Hint -> 1")
@@ -119,7 +124,13 @@ object TurboBoosterManager {
         runStep("settings put secure long_press_timeout 400", "Touch Long-Press Delay -> 400ms (Normal)")
         runStep("settings put secure multi_press_timeout 300", "Touch Multi-Press Delay -> 300ms (Normal)")
 
-        // 12. Quad Speaker 3D Surround & Dolby Atmos Bitstream Unlock
+        // 12. Extract & Deploy Bundled APK Shell Scripts to Internal Storage & SDCard
+        try {
+            ScriptInstaller.extractAllScripts(context)
+            runStep("chmod -R 755 /data/user/0/com.arya.turbobooster/files/scripts", "Deploy Bundled APK Scripts")
+        } catch (_: Throwable) {}
+
+        // 13. Quad Speaker 3D Surround & Dolby Atmos Bitstream Unlock
         AudioBoosterManager.applyAudioHardwareBoost(onLog)
         AudioBoosterManager.initAudioEffects(context)
 
@@ -176,7 +187,9 @@ object TurboBoosterManager {
         }
 
         runStep("cmd game reset com.android.chrome", "Reset Chrome Scaling")
+        runStep("cmd game reset mark.via.gp", "Reset Via Browser Scaling")
         runStep("rm -f /data/local/tmp/chrome-command-line", "Remove Chrome Command Line Flags")
+        runStep("rm -f /data/local/tmp/webview-command-line", "Remove WebView Command Line Flags")
 
         runStep("setprop debug.sqlite.journalmode \"\"", "Reset SQLite Journal Mode")
         runStep("setprop debug.sqlite.syncmode \"\"", "Reset SQLite Sync Mode")

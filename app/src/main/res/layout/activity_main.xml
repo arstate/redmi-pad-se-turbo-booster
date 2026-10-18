@@ -358,7 +358,7 @@
                         android:layout_marginVertical="12dp"
                         app:dividerColor="@color/md_theme_dark_surfaceVariant" />
 
-                    <!-- Specific Actions -->
+                    <!-- Specific Actions Row 1 -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -383,6 +383,36 @@
                             android:layout_weight="1"
                             android:layout_marginStart="6dp"
                             android:text="🌐 Boost Chrome"
+                            android:textSize="12sp"
+                            app:cornerRadius="10dp" />
+                    </LinearLayout>
+
+                    <!-- Specific Actions Row 2 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnOptimizeVia"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:text="⚡ Boost Via Browser"
+                            android:textSize="12sp"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRunBundledScripts"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:text="📜 Run APK Scripts"
                             android:textSize="12sp"
                             app:cornerRadius="10dp" />
                     </LinearLayout>

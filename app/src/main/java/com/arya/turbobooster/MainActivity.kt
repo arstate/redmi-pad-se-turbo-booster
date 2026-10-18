@@ -3,7 +3,9 @@ package com.arya.turbobooster
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -12,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import com.arya.turbobooster.booster.AudioBoosterManager
 import com.arya.turbobooster.booster.DeviceMetrics
 import com.arya.turbobooster.booster.LogEntry
+import com.arya.turbobooster.booster.ScriptInstaller
 import com.arya.turbobooster.booster.ShellExecutor
 import com.arya.turbobooster.booster.TurboBoosterManager
 import com.arya.turbobooster.databinding.ActivityMainBinding
@@ -149,6 +152,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        binding.btnOptimizeVia.setOnClickListener {
+            handleViaBrowserClick()
+        }
+
+        binding.btnRunBundledScripts.setOnClickListener {
+            showBundledScriptsDialog()
+        }
+
         binding.btnShizukuStatus.setOnClickListener {
             handleShizukuBadgeClick()
         }
@@ -170,6 +181,104 @@ class MainActivity : AppCompatActivity() {
         setupAudioUI()
     }
 
+    private fun handleViaBrowserClick() {
+        val isInstalled = try {
+            packageManager.getPackageInfo("mark.via.gp", 0)
+            true
+        } catch (_: Exception) {
+            false
+        }
+
+        if (!isInstalled) {
+            AlertDialog.Builder(this)
+                .setTitle("Via Browser Belum Terpasang")
+                .setMessage("Via Browser (~1.5 MB) adalah peramban paling enteng & irit RAM untuk membuka web desktop di tablet.\n\nPilih opsi instalasi:")
+                .setPositiveButton("Buka Play Store") { _, _ ->
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=mark.via.gp"))
+                    try {
+                        startActivity(intent)
+                    } catch (_: Exception) {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=mark.via.gp")))
+                    }
+                }
+                .setNeutralButton("Salin Link PlayStore") { _, _ ->
+                    val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    cm.setPrimaryClip(ClipData.newPlainText("ViaPlayStore", "https://play.google.com/store/apps/details?id=mark.via.gp"))
+                    Toast.makeText(this, "Link disalin ke clipboard", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Batal", null)
+                .show()
+            return
+        }
+
+        if (!checkPrivilegeOrPrompt()) return
+        lifecycleScope.launch {
+            appendLog("--- Optimizing Via Browser for Desktop Web ---")
+            val webviewFlags = "_ --enable-gpu-rasterization --enable-zero-copy --ignore-gpu-blocklist --enable-features=SmoothScrolling,ParallelDownloading"
+            val r1 = ShellExecutor.execute("echo '$webviewFlags' > /data/local/tmp/webview-command-line && chmod 644 /data/local/tmp/webview-command-line", requirePrivileged = true)
+            val r2 = ShellExecutor.execute("cmd game set --downscale 0.9 mark.via.gp", requirePrivileged = true)
+            appendLog("WebView GPU Flags: ${r1.isSuccess}, Downscale 0.9x: ${r2.isSuccess}")
+            Toast.makeText(this@MainActivity, "⚡ Via Browser Boosted!", Toast.LENGTH_SHORT).show()
+
+            val launchIntent = packageManager.getLaunchIntentForPackage("mark.via.gp")
+            if (launchIntent != null) {
+                startActivity(launchIntent)
+            }
+        }
+    }
+
+    private fun showBundledScriptsDialog() {
+        val scripts = arrayOf(
+            "boost.sh (Master Full Booster)",
+            "boost_extreme.sh (Extreme Gaming & CPU)",
+            "boost_deep_system.sh (Deep Kernel & RAM)",
+            "boost_chrome_webview.sh (Chrome & WebView)",
+            "boost_quad_audio.sh (Quad Speaker Studio)",
+            "pubg_ultimate_booster.sh (PUBG Mobile Tweak)",
+            "launch_freeform.sh (Freeform Multi-Window)",
+            "📂 Ekstrak Semua Script ke /sdcard/TurboBoosterScripts"
+        )
+
+        AlertDialog.Builder(this)
+            .setTitle("📜 Bundled APK Scripts (Permanen)")
+            .setItems(scripts) { _, which ->
+                when (which) {
+                    0 -> runSelectedScript("boost.sh")
+                    1 -> runSelectedScript("boost_extreme.sh")
+                    2 -> runSelectedScript("boost_deep_system.sh")
+                    3 -> runSelectedScript("boost_chrome_webview.sh")
+                    4 -> runSelectedScript("boost_quad_audio.sh")
+                    5 -> runSelectedScript("pubg_ultimate_booster.sh")
+                    6 -> runSelectedScript("launch_freeform.sh")
+                    7 -> {
+                        lifecycleScope.launch {
+                            val list = ScriptInstaller.extractAllScripts(this@MainActivity)
+                            appendLog("Extracted ${list.size} scripts to internal & /sdcard/TurboBoosterScripts/")
+                            Toast.makeText(this@MainActivity, "Semua script berhasil diekstrak!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Tutup", null)
+            .show()
+    }
+
+    private fun runSelectedScript(scriptName: String) {
+        if (!checkPrivilegeOrPrompt()) return
+        lifecycleScope.launch {
+            appendLog(">>> RUNNING BUNDLED SCRIPT: $scriptName <<<")
+            val ok = ScriptInstaller.executeBundledScript(this@MainActivity, scriptName) { entry ->
+                runOnUiThread { appendCommandEntry(entry) }
+            }
+            if (ok) {
+                appendLog(">>> Script $scriptName completed successfully <<<")
+                Toast.makeText(this@MainActivity, "Script $scriptName selesai!", Toast.LENGTH_SHORT).show()
+            } else {
+                appendLog(">>> Warning: Script $scriptName returned errors <<<")
+            }
+        }
+    }
+
     private fun setupAudioUI() {
         AudioBoosterManager.initAudioEffects(this)
         val isAudioOn = AudioBoosterManager.isAudioTurboEnabled(this)
@@ -182,6 +291,7 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 if (isChecked) {
                     appendLog("--- Activating Quad Speaker Studio Audio ---")
+                    AudioBoosterManager.setLoudnessActive(true)
                     AudioBoosterManager.setBassBoostActive(true)
                     AudioBoosterManager.setSurroundActive(true)
                     AudioBoosterManager.applyPresetCurve(AudioBoosterManager.getActivePreset(this@MainActivity))
@@ -189,11 +299,12 @@ class MainActivity : AppCompatActivity() {
                         runOnUiThread { appendCommandEntry(entry) }
                     }
                     if (ok) {
-                        appendLog("Quad Speaker Studio Audio: ACTIVE (Dolby Atmos + Virtual Bass)")
+                        appendLog("Quad Speaker Studio Audio: ACTIVE (Dolby Atmos + Loudness +5dB)")
                         Toast.makeText(this@MainActivity, "🎵 Studio Audio Activated!", Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     appendLog("--- Restoring Stock Audio Mode ---")
+                    AudioBoosterManager.setLoudnessActive(false)
                     AudioBoosterManager.setBassBoostActive(false)
                     AudioBoosterManager.setSurroundActive(false)
                     val ok = AudioBoosterManager.resetAudioHardwareStock { entry ->
