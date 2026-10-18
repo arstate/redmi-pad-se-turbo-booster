@@ -59,9 +59,10 @@ object TurboBoosterManager {
             return false
         }
 
+        var criticalSucceeded = true
         var allSucceeded = true
 
-        suspend fun runStep(cmd: String, desc: String? = null) {
+        suspend fun runStep(cmd: String, desc: String? = null, isCritical: Boolean = false) {
             val ts = timeFormat.format(java.util.Date())
             val res = ShellExecutor.execute(cmd, requirePrivileged = true)
             val out = if (res.stdout.isNotBlank()) res.stdout else res.stderr
@@ -72,30 +73,33 @@ object TurboBoosterManager {
                 isSuccess = res.isSuccess
             )
             onLog(entry)
-            if (!res.isSuccess) allSucceeded = false
+            if (!res.isSuccess) {
+                allSucceeded = false
+                if (isCritical) criticalSucceeded = false
+            }
         }
 
         // 1. Lock CPU frequencies to max (Fixed Performance Mode)
-        runStep("cmd power set-fixed-performance-mode-enabled true", "Lock CPU Clocks (2.4GHz Gold / 1.9GHz Silver)")
+        runStep("cmd power set-fixed-performance-mode-enabled true", "Lock CPU Clocks (2.4GHz Gold / 1.9GHz Silver)", isCritical = true)
 
         // 2. Bypass thermal throttling
-        runStep("cmd thermalservice override-status 0", "Override Thermal Throttling (Cooling Status 0)")
+        runStep("cmd thermalservice override-status 0", "Override Thermal Throttling (Cooling Status 0)", isCritical = true)
 
         // 3. Fast SQLite In-Memory Caching (bypasses eMMC bottleneck)
-        runStep("setprop debug.sqlite.journalmode MEMORY", "SQLite Journal Mode -> MEMORY")
-        runStep("setprop debug.sqlite.syncmode OFF", "SQLite Sync Mode -> OFF")
+        runStep("setprop debug.sqlite.journalmode MEMORY", "SQLite Journal Mode -> MEMORY", isCritical = true)
+        runStep("setprop debug.sqlite.syncmode OFF", "SQLite Sync Mode -> OFF", isCritical = true)
 
         // 4. Remove GPU Gaussian blur
-        runStep("settings put global disable_window_blurs 1", "Disable GPU Window Blurs")
+        runStep("settings put global disable_window_blurs 1", "Disable GPU Window Blurs", isCritical = true)
 
         // 5. Lock 90Hz Display Refresh Rate
-        runStep("settings put secure refresh_rate_mode 2", "Refresh Rate Mode -> 2 (Forced High)")
-        runStep("settings put system peak_refresh_rate 90.0", "Peak Refresh Rate -> 90.0 Hz")
+        runStep("settings put secure refresh_rate_mode 2", "Refresh Rate Mode -> 2 (Forced High)", isCritical = true)
+        runStep("settings put system peak_refresh_rate 90.0", "Peak Refresh Rate -> 90.0 Hz", isCritical = true)
 
         // 6. Memory Factor and Activity Manager optimizations
-        runStep("cmd activity memory-factor set NORMAL", "Activity Memory Factor -> NORMAL")
-        runStep("cmd device_config put activity_manager max_cached_processes 16", "Max Cached Processes -> 16")
-        runStep("cmd device_config put activity_manager_native_boot modern_queue_enabled true", "Modern Broadcast Queue -> ENABLED")
+        runStep("cmd activity memory-factor set NORMAL", "Activity Memory Factor -> NORMAL", isCritical = true)
+        runStep("cmd device_config put activity_manager max_cached_processes 16", "Max Cached Processes -> 16", isCritical = true)
+        runStep("cmd device_config put activity_manager_native_boot modern_queue_enabled true", "Modern Broadcast Queue -> ENABLED", isCritical = true)
 
         // 7. MIUI / HyperOS Downscaling Subsystem
         runStep("cmd miui.downscale disable-downscale false && cmd miui.downscale set-debug-mode true", "Enable HyperOS Downscale Subsystem")
@@ -111,14 +115,9 @@ object TurboBoosterManager {
         runStep("echo '$chromeFlags' > /data/local/tmp/chrome-command-line && chmod 644 /data/local/tmp/chrome-command-line", "Inject Chrome Anti-Reload Flags")
         runStep("cmd game set --downscale 0.85 com.android.chrome", "Chrome Resolution Scaling -> 0.85x")
 
-        // 9b. Via Browser & System WebView GPU Acceleration Flags
-        val webviewFlags = "_ --enable-gpu-rasterization --enable-zero-copy --ignore-gpu-blocklist --enable-features=SmoothScrolling,ParallelDownloading"
-        runStep("echo '$webviewFlags' > /data/local/tmp/webview-command-line && chmod 644 /data/local/tmp/webview-command-line", "Inject WebView GPU Flags (Via Browser)")
-        runStep("cmd game set --downscale 0.9 mark.via.gp", "Via Browser Scaling -> 0.9x")
-
         // 10. SurfaceFlinger Realtime Binder Thread & ADPF CPU Hint
-        runStep("setprop debug.sf.set_binder_thread_rt 1", "SurfaceFlinger RT Binder Thread -> 1")
-        runStep("setprop debug.sf.enable_adpf_cpu_hint 1", "SurfaceFlinger ADPF CPU Hint -> 1")
+        runStep("setprop debug.sf.set_binder_thread_rt 1", "SurfaceFlinger RT Binder Thread -> 1", isCritical = true)
+        runStep("setprop debug.sf.enable_adpf_cpu_hint 1", "SurfaceFlinger ADPF CPU Hint -> 1", isCritical = true)
 
         // 11. Ergonomic Touch Delays (Fix Accidental Long-Press & Menu Popups)
         runStep("settings put secure long_press_timeout 400", "Touch Long-Press Delay -> 400ms (Normal)")
@@ -133,10 +132,10 @@ object TurboBoosterManager {
         AudioBoosterManager.applyAudioHardwareBoost(onLog)
         AudioBoosterManager.initAudioEffects(context)
 
-        if (allSucceeded) {
+        if (criticalSucceeded) {
             setTurboActive(context, true)
         }
-        return allSucceeded
+        return criticalSucceeded
     }
 
     suspend fun applyStockMode(
@@ -186,9 +185,7 @@ object TurboBoosterManager {
         }
 
         runStep("cmd game reset com.android.chrome", "Reset Chrome Scaling")
-        runStep("cmd game reset mark.via.gp", "Reset Via Browser Scaling")
         runStep("rm -f /data/local/tmp/chrome-command-line", "Remove Chrome Command Line Flags")
-        runStep("rm -f /data/local/tmp/webview-command-line", "Remove WebView Command Line Flags")
 
         runStep("setprop debug.sqlite.journalmode \"\"", "Reset SQLite Journal Mode")
         runStep("setprop debug.sqlite.syncmode \"\"", "Reset SQLite Sync Mode")

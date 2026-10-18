@@ -152,10 +152,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        binding.btnOptimizeVia.setOnClickListener {
-            handleViaBrowserClick()
-        }
-
         binding.btnRunBundledScripts.setOnClickListener {
             showBundledScriptsDialog()
         }
@@ -179,52 +175,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupAudioUI()
-    }
-
-    private fun handleViaBrowserClick() {
-        val isInstalled = try {
-            packageManager.getPackageInfo("mark.via.gp", 0)
-            true
-        } catch (_: Exception) {
-            false
-        }
-
-        if (!isInstalled) {
-            AlertDialog.Builder(this)
-                .setTitle("Via Browser Belum Terpasang")
-                .setMessage("Via Browser (~1.5 MB) adalah peramban paling enteng & irit RAM untuk membuka web desktop di tablet.\n\nPilih opsi instalasi:")
-                .setPositiveButton("Buka Play Store") { _, _ ->
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=mark.via.gp"))
-                    try {
-                        startActivity(intent)
-                    } catch (_: Exception) {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=mark.via.gp")))
-                    }
-                }
-                .setNeutralButton("Salin Link PlayStore") { _, _ ->
-                    val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    cm.setPrimaryClip(ClipData.newPlainText("ViaPlayStore", "https://play.google.com/store/apps/details?id=mark.via.gp"))
-                    Toast.makeText(this, "Link disalin ke clipboard", Toast.LENGTH_SHORT).show()
-                }
-                .setNegativeButton("Batal", null)
-                .show()
-            return
-        }
-
-        if (!checkPrivilegeOrPrompt()) return
-        lifecycleScope.launch {
-            appendLog("--- Optimizing Via Browser for Desktop Web ---")
-            val webviewFlags = "_ --enable-gpu-rasterization --enable-zero-copy --ignore-gpu-blocklist --enable-features=SmoothScrolling,ParallelDownloading"
-            val r1 = ShellExecutor.execute("echo '$webviewFlags' > /data/local/tmp/webview-command-line && chmod 644 /data/local/tmp/webview-command-line", requirePrivileged = true)
-            val r2 = ShellExecutor.execute("cmd game set --downscale 0.9 mark.via.gp", requirePrivileged = true)
-            appendLog("WebView GPU Flags: ${r1.isSuccess}, Downscale 0.9x: ${r2.isSuccess}")
-            Toast.makeText(this@MainActivity, "⚡ Via Browser Boosted!", Toast.LENGTH_SHORT).show()
-
-            val launchIntent = packageManager.getLaunchIntentForPackage("mark.via.gp")
-            if (launchIntent != null) {
-                startActivity(launchIntent)
-            }
-        }
     }
 
     private fun showBundledScriptsDialog() {
