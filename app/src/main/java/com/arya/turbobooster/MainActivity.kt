@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.arya.turbobooster.booster.AudioBoosterManager
 import com.arya.turbobooster.booster.DeviceMetrics
 import com.arya.turbobooster.booster.LogEntry
 import com.arya.turbobooster.booster.ShellExecutor
@@ -74,6 +75,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         telemetryJob?.cancel()
+        AudioBoosterManager.release()
         try {
             Shizuku.removeRequestPermissionResultListener(permissionListener)
             Shizuku.removeBinderReceivedListener(binderReceivedListener)
@@ -163,6 +165,75 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnClearLog.setOnClickListener {
             binding.tvConsoleLog.text = "[Console cleared]\n"
+        }
+
+        setupAudioUI()
+    }
+
+    private fun setupAudioUI() {
+        AudioBoosterManager.initAudioEffects(this)
+        val isAudioOn = AudioBoosterManager.isAudioTurboEnabled(this)
+        binding.switchAudioBooster.isChecked = isAudioOn
+        updateAudioUI(isAudioOn)
+
+        binding.switchAudioBooster.setOnCheckedChangeListener { _, isChecked ->
+            AudioBoosterManager.setAudioTurboEnabled(this, isChecked)
+            updateAudioUI(isChecked)
+            lifecycleScope.launch {
+                if (isChecked) {
+                    appendLog("--- Activating Quad Speaker Studio Audio ---")
+                    AudioBoosterManager.setBassBoostActive(true)
+                    AudioBoosterManager.setSurroundActive(true)
+                    AudioBoosterManager.applyPresetCurve(AudioBoosterManager.getActivePreset(this@MainActivity))
+                    val ok = AudioBoosterManager.applyAudioHardwareBoost { entry ->
+                        runOnUiThread { appendCommandEntry(entry) }
+                    }
+                    if (ok) {
+                        appendLog("Quad Speaker Studio Audio: ACTIVE (Dolby Atmos + Virtual Bass)")
+                        Toast.makeText(this@MainActivity, "🎵 Studio Audio Activated!", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    appendLog("--- Restoring Stock Audio Mode ---")
+                    AudioBoosterManager.setBassBoostActive(false)
+                    AudioBoosterManager.setSurroundActive(false)
+                    val ok = AudioBoosterManager.resetAudioHardwareStock { entry ->
+                        runOnUiThread { appendCommandEntry(entry) }
+                    }
+                    if (ok) {
+                        appendLog("Audio mode: Stock")
+                        Toast.makeText(this@MainActivity, "Audio Restored to Stock", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+
+        binding.btnAudioPresetBass.setOnClickListener {
+            applyAudioPreset("bass_club", "🎧 Bass Club (Deep Punch & Sub-Bass)")
+        }
+
+        binding.btnAudioPresetCinema.setOnClickListener {
+            applyAudioPreset("cinema", "🎬 Cinema 3D (Vocal & Spatial Sound)")
+        }
+
+        binding.btnAudioPresetGaming.setOnClickListener {
+            applyAudioPreset("gaming", "🎮 Gaming 3D (Footstep & Acoustic Cues)")
+        }
+    }
+
+    private fun applyAudioPreset(preset: String, displayName: String) {
+        AudioBoosterManager.setActivePreset(this, preset)
+        AudioBoosterManager.applyPresetCurve(preset)
+        appendLog("Applied Audio Preset: $displayName")
+        Toast.makeText(this, displayName, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun updateAudioUI(isAudioOn: Boolean) {
+        if (isAudioOn) {
+            binding.tvAudioStatus.text = "Dolby Atmos 3D Surround & Deep Bass Punch (ACTIVE)"
+            binding.tvAudioStatus.setTextColor(getColor(R.color.accent_green))
+        } else {
+            binding.tvAudioStatus.text = "Stock Flat Sound • Hardware Surround Off"
+            binding.tvAudioStatus.setTextColor(getColor(R.color.md_theme_dark_onSurfaceVariant))
         }
     }
 

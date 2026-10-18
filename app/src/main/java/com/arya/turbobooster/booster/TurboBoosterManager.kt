@@ -119,6 +119,10 @@ object TurboBoosterManager {
         runStep("settings put secure long_press_timeout 400", "Touch Long-Press Delay -> 400ms (Normal)")
         runStep("settings put secure multi_press_timeout 300", "Touch Multi-Press Delay -> 300ms (Normal)")
 
+        // 12. Quad Speaker 3D Surround & Dolby Atmos Bitstream Unlock
+        AudioBoosterManager.applyAudioHardwareBoost(onLog)
+        AudioBoosterManager.initAudioEffects(context)
+
         if (allSucceeded) {
             setTurboActive(context, true)
         }
@@ -180,6 +184,10 @@ object TurboBoosterManager {
         runStep("setprop debug.sf.enable_adpf_cpu_hint 0", "Reset SurfaceFlinger ADPF Hint")
         runStep("settings put secure long_press_timeout 400", "Reset Long-Press Delay (400ms Normal)")
         runStep("settings put secure multi_press_timeout 300", "Reset Multi-Press Delay (300ms Normal)")
+
+        // Reset Audio
+        AudioBoosterManager.resetAudioHardwareStock(onLog)
+        AudioBoosterManager.release()
 
         setTurboActive(context, false)
         return allSucceeded
