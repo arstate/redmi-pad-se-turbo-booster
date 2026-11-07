@@ -179,6 +179,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun showBundledScriptsDialog() {
         val scripts = arrayOf(
+            "🚀 boost_flagship_unfcker.sh (HyperOS Flagship Unfcker)",
+            "⚡ boost_100.sh (100 Celah Sistem Terdalam)",
             "boost.sh (Master Full Booster)",
             "boost_extreme.sh (Extreme Gaming & CPU)",
             "boost_deep_system.sh (Deep Kernel & RAM)",
@@ -193,14 +195,16 @@ class MainActivity : AppCompatActivity() {
             .setTitle("📜 Bundled APK Scripts (Permanen)")
             .setItems(scripts) { _, which ->
                 when (which) {
-                    0 -> runSelectedScript("boost.sh")
-                    1 -> runSelectedScript("boost_extreme.sh")
-                    2 -> runSelectedScript("boost_deep_system.sh")
-                    3 -> runSelectedScript("boost_chrome_webview.sh")
-                    4 -> runSelectedScript("boost_quad_audio.sh")
-                    5 -> runSelectedScript("pubg_ultimate_booster.sh")
-                    6 -> runSelectedScript("launch_freeform.sh")
-                    7 -> {
+                    0 -> runSelectedScript("boost_flagship_unfcker.sh")
+                    1 -> runSelectedScript("boost_100.sh")
+                    2 -> runSelectedScript("boost.sh")
+                    3 -> runSelectedScript("boost_extreme.sh")
+                    4 -> runSelectedScript("boost_deep_system.sh")
+                    5 -> runSelectedScript("boost_chrome_webview.sh")
+                    6 -> runSelectedScript("boost_quad_audio.sh")
+                    7 -> runSelectedScript("pubg_ultimate_booster.sh")
+                    8 -> runSelectedScript("launch_freeform.sh")
+                    9 -> {
                         lifecycleScope.launch {
                             val list = ScriptInstaller.extractAllScripts(this@MainActivity)
                             appendLog("Extracted ${list.size} scripts to internal & /sdcard/TurboBoosterScripts/")

@@ -184,7 +184,11 @@ for pkg in com.lemon.lvoverseas com.lemon.ccpadpro com.adobe.lrmobile com.mojang
   cmd appops set $pkg RUN_IN_BACKGROUND allow 2>/dev/null || true
 done
 device_config put activity_manager use_compaction false
-device_config put gpu android.provider.flags.angle_dynamic_denylist false
+cmd appops set com.mobile.legends READ_EXTERNAL_STORAGE allow 2>/dev/null || true
+cmd appops set com.mobile.legends WRITE_EXTERNAL_STORAGE allow 2>/dev/null || true
+cmd appops set com.mobile.legends MANAGE_EXTERNAL_STORAGE allow 2>/dev/null || true
+settings delete global angle_gl_driver_selection_values
+settings delete global angle_gl_driver_selection_pkgs
 cmd power set-adaptive-power-saver-enabled false
 cmd power set-mode 0
 cmd thermalservice override-status 0
