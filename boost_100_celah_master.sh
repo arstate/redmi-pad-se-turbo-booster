@@ -35,13 +35,39 @@ device_config override core_graphics com.android.graphics.hwui.flags.clip_surfac
 # ==============================================================================
 # Kategori 3: Qualcomm Bengal / Adreno 610 Driver & ANGLE Layer (Tweaks 21-30)
 # ==============================================================================
-settings put global updatable_driver_all_apps 1
-settings put global GPUTUNER_SWITCH true
-GAMES="com.mobile.legends,com.roblox.client,com.mojang.minecraftpe,com.lemon.lvoverseas,ph.spacedesk.beta,com.tencent.ig"
-settings put global game_driver_opt_in_apps "$GAMES"
-settings put global updatable_driver_production_opt_in_apps "$GAMES"
-settings put global angle_gl_driver_selection_values "angle"
-device_config override gpu android.provider.flags.angle_dynamic_denylist false
+# Anti-Crash: Hapus ANGLE & force updatable driver agar game Unity (MLBB) tidak force-close
+settings delete global angle_gl_driver_selection_values 2>/dev/null || true
+settings delete global angle_gl_driver_selection_pkgs 2>/dev/null || true
+settings delete global updatable_driver_all_apps 2>/dev/null || true
+settings delete global game_driver_all_apps 2>/dev/null || true
+settings delete global GPUTUNER_SWITCH 2>/dev/null || true
+cmd appops set com.mobile.legends READ_EXTERNAL_STORAGE allow 2>/dev/null || true
+cmd appops set com.mobile.legends WRITE_EXTERNAL_STORAGE allow 2>/dev/null || true
+cmd appops set com.mobile.legends MANAGE_EXTERNAL_STORAGE allow 2>/dev/null || true
+
+# SurfaceFlinger Buffer Latch & Dirty Regions (4PDA / Coolapk 90Hz Stutter Fix)
+setprop debug.sf.latch_unsignaled 1
+setprop debug.sf.enable_hwc_vds 1
+setprop debug.sf.enable_advanced_sf_phase_offset 1
+setprop debug.hwui.render_dirty_regions false
+
+# Android Phantom Process Killer Bypass & eMMC Logging Lockdown
+device_config set_sync_disabled_for_tests persistent 2>/dev/null || true
+device_config put activity_manager max_phantom_processes 2147483647 2>/dev/null || true
+settings put global settings_enable_monitor_phantom_procs false 2>/dev/null || true
+settings put system send_miui_log 0
+settings put system upload_log 0
+settings put system anonymous_data 0
+settings put secure miui_log_enable 0
+settings put secure track_service 0
+settings put global miui_log_enable 0
+
+# Trackers & Advertising Bloatware AppOps Lockdown
+cmd appops set com.miui.msa.global RUN_IN_BACKGROUND ignore 2>/dev/null || true
+cmd appops set com.miui.analytics RUN_IN_BACKGROUND ignore 2>/dev/null || true
+cmd appops set com.xiaomi.metok-sdk RUN_IN_BACKGROUND ignore 2>/dev/null || true
+cmd appops set com.miui.daemon RUN_IN_BACKGROUND ignore 2>/dev/null || true
+
 setprop debug.graphics.gpu.profiler.perfetto false
 setprop debug.renderengine.skia_use_perfetto_track_events false
 setprop debug.hwui.skia_use_perfetto_track_events false

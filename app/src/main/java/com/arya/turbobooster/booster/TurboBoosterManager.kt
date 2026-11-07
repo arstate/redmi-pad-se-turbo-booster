@@ -152,6 +152,8 @@ object TurboBoosterManager {
         runStep("service call miui.mqsas.IMQSNative 21 i32 1 s16 \"setprop\" i32 1 s16 \"persist.sys.mi_shadow_supported true\" s16 \"/storage/emulated/0/log.txt\" i32 600", "MQSAS Backdoor: Native Shadow -> TRUE")
         runStep("service call miui.mqsas.IMQSNative 21 i32 1 s16 \"setprop\" i32 1 s16 \"persist.sys.miui.blur.enable false\" s16 \"/storage/emulated/0/log.txt\" i32 600", "MQSAS Backdoor: MIUI Blur -> FALSE")
         runStep("service call miui.mqsas.IMQSNative 21 i32 1 s16 \"setprop\" i32 1 s16 \"persist.sys.sf.disable_blurs 1\" s16 \"/storage/emulated/0/log.txt\" i32 600", "MQSAS Backdoor: SurfaceFlinger Blurs -> DISABLED")
+        runStep("service call miui.mqsas.IMQSNative 21 i32 1 s16 \"setprop\" i32 1 s16 \"persist.sys.background_blur_supported false\" s16 \"/storage/emulated/0/log.txt\" i32 600", "MQSAS Backdoor: Background Blur -> FALSE")
+        runStep("service call miui.mqsas.IMQSNative 21 i32 1 s16 \"setprop\" i32 1 s16 \"persist.sys.miui_blur_enabled false\" s16 \"/storage/emulated/0/log.txt\" i32 600", "MQSAS Backdoor: MIUI Blur Enabled -> FALSE")
 
         // 13. Disable Desktop & Tablet Dock Blur (Saves 100% Fillrate on Swipe)
         runStep("settings put global enable_miui_desktop_blur 0", "Desktop Gaussian Blur -> 0")
@@ -185,13 +187,33 @@ object TurboBoosterManager {
         runStep("settings put global force_resizable_activities 1", "Force Resizable Activities -> ENABLED")
         runStep("settings put global enable_non_resizable_multi_window 1", "Non-resizable Multi-Window -> ENABLED")
 
-        // 18. Suppress Heavy Background Leeches
+        // 18. Suppress Heavy Background Leeches & Xiaomi Trackers
         runStep("cmd appops set com.google.android.as RUN_IN_BACKGROUND ignore", "Google AS Background -> IGNORE")
         runStep("pm suspend --user 0 com.google.android.as", "Suspend Google AS")
         runStep("cmd appops set com.milink.service RUN_IN_BACKGROUND ignore", "MiLink Service Background -> IGNORE")
         runStep("cmd appops set com.xiaomi.aicr RUN_IN_BACKGROUND ignore", "Xiaomi AICR Background -> IGNORE")
+        runStep("cmd appops set com.miui.msa.global RUN_IN_BACKGROUND ignore", "MSA Global Ads -> IGNORE")
+        runStep("cmd appops set com.miui.analytics RUN_IN_BACKGROUND ignore", "MIUI Analytics -> IGNORE")
+        runStep("cmd appops set com.xiaomi.metok-sdk RUN_IN_BACKGROUND ignore", "Xiaomi Metok SDK -> IGNORE")
+        runStep("cmd appops set com.miui.daemon RUN_IN_BACKGROUND ignore", "MIUI Daemon -> IGNORE")
 
-        // 19. AOT DEXOPT Speed Compilation (SystemUI, Launcher, Settings)
+        // 19. SurfaceFlinger Buffer Latch & Dirty Regions (4PDA / Coolapk 90Hz Stutter Fix)
+        runStep("setprop debug.sf.latch_unsignaled 1", "SurfaceFlinger Latch Unsignaled -> 1")
+        runStep("setprop debug.sf.enable_hwc_vds 1", "SurfaceFlinger HWC VDS -> 1")
+        runStep("setprop debug.sf.enable_advanced_sf_phase_offset 1", "SurfaceFlinger Advanced Phase Offset -> 1")
+        runStep("setprop debug.hwui.render_dirty_regions false", "HWUI Render Dirty Regions -> FALSE")
+
+        // 20. Android Phantom Process Killer Bypass & eMMC Logging Lockdown
+        runStep("cmd device_config put activity_manager max_phantom_processes 2147483647", "Max Phantom Processes -> UNLIMITED")
+        runStep("settings put global settings_enable_monitor_phantom_procs false", "Monitor Phantom Procs -> FALSE")
+        runStep("settings put system send_miui_log 0", "MIUI Log Sending -> 0")
+        runStep("settings put system upload_log 0", "MIUI Log Upload -> 0")
+        runStep("settings put system anonymous_data 0", "Anonymous Data -> 0")
+        runStep("settings put secure miui_log_enable 0", "Secure MIUI Log -> 0")
+        runStep("settings put secure track_service 0", "Track Service -> 0")
+        runStep("settings put global miui_log_enable 0", "Global MIUI Log -> 0")
+
+        // 21. AOT DEXOPT Speed Compilation (SystemUI, Launcher, Settings)
         runStep("cmd package compile -m speed -f com.miui.home", "AOT Speed Compile -> HyperOS Launcher")
         runStep("cmd package compile -m speed -f com.android.systemui", "AOT Speed Compile -> SystemUI")
         runStep("cmd package compile -m speed -f com.android.settings", "AOT Speed Compile -> Settings")

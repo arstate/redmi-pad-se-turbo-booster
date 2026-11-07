@@ -178,6 +178,34 @@ service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys
 service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_view_smoothcorner true" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
 service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_window_smoothcorner true" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
 service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.sf.disable_blurs 1" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.background_blur_supported false" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui_blur_enabled false" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui.blur.enable false" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
+
+# SurfaceFlinger Buffer Latching & Phase Offset (4PDA / Coolapk fix for 90Hz Stutter)
+setprop debug.sf.latch_unsignaled 1
+setprop debug.sf.enable_hwc_vds 1
+setprop debug.sf.enable_advanced_sf_phase_offset 1
+setprop debug.hwui.render_dirty_regions false
+
+# Android Phantom Process Killer Bypass (Stops 32 child-proc kill limit)
+device_config set_sync_disabled_for_tests persistent 2>/dev/null || true
+device_config put activity_manager max_phantom_processes 2147483647 2>/dev/null || true
+settings put global settings_enable_monitor_phantom_procs false 2>/dev/null || true
+
+# eMMC 5.1 Disk Thrashing Telemetry Lockdown (Saves I/O bottleneck)
+settings put system send_miui_log 0
+settings put system upload_log 0
+settings put system anonymous_data 0
+settings put secure miui_log_enable 0
+settings put secure track_service 0
+settings put global miui_log_enable 0
+
+# Trackers & Advertising Bloatware AppOps Lockdown
+cmd appops set com.miui.msa.global RUN_IN_BACKGROUND ignore 2>/dev/null || true
+cmd appops set com.miui.analytics RUN_IN_BACKGROUND ignore 2>/dev/null || true
+cmd appops set com.xiaomi.metok-sdk RUN_IN_BACKGROUND ignore 2>/dev/null || true
+cmd appops set com.miui.daemon RUN_IN_BACKGROUND ignore 2>/dev/null || true
 
 # Suppress heavy background leeches without SecurityException
 cmd appops set com.google.android.as RUN_IN_BACKGROUND ignore
