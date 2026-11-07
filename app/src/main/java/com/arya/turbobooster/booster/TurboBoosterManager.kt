@@ -130,6 +130,11 @@ object TurboBoosterManager {
         // 10. SurfaceFlinger Realtime Binder Thread & ADPF CPU Hint
         runStep("setprop debug.sf.set_binder_thread_rt 1", "SurfaceFlinger RT Binder Thread -> 1", isCritical = true)
         runStep("setprop debug.sf.enable_adpf_cpu_hint 1", "SurfaceFlinger ADPF CPU Hint -> 1", isCritical = true)
+        runStep("setprop debug.hwui.renderer skiagl", "HWUI Renderer -> SkiaGL (Crash-Free Adreno 610)")
+        runStep("setprop debug.renderengine.backend skiaglthreaded", "RenderEngine Backend -> SkiaGL Threaded")
+        runStep("setprop debug.hwui.use_gpu_pixel_buffers true", "PBO Texture Acceleration -> TRUE")
+        runStep("setprop debug.sf.predict_hwc_composition_strategy 1", "HWC Strategy Predict -> 1")
+        runStep("setprop debug.sqlite.wal.syncmode OFF", "SQLite WAL Sync -> OFF")
 
         // 11. Zero-Delay Touch & Tablet Gesture Responsiveness
         runStep("settings put secure long_press_timeout 250", "Touch Long-Press -> 250ms (Zero Lag)")
@@ -213,7 +218,14 @@ object TurboBoosterManager {
         runStep("settings put secure track_service 0", "Track Service -> 0")
         runStep("settings put global miui_log_enable 0", "Global MIUI Log -> 0")
 
-        // 21. AOT DEXOPT Speed Compilation (SystemUI, Launcher, Settings)
+        // 21. Radio Jitter & Memory Architecture Tuning
+        runStep("settings put global wifi_scan_always_enabled 0", "Wi-Fi Location Polling -> 0")
+        runStep("settings put global ble_scan_always_enabled 0", "BLE Location Polling -> 0")
+        runStep("cmd device_config put runtime_native_boot mglru true", "MGLRU Memory Optimizer -> TRUE")
+        runStep("service call miui.mqsas.IMQSNative 21 i32 1 s16 \"setprop\" i32 1 s16 \"persist.sys.miui.sf_fps 90\" s16 \"/storage/emulated/0/log.txt\" i32 600", "MQSAS Backdoor: HyperOS SurfaceFlinger -> 90 FPS")
+        runStep("pm trim-caches 999G", "Trim Stale App Caches")
+
+        // 22. AOT DEXOPT Speed Compilation (SystemUI, Launcher, Settings)
         runStep("cmd package compile -m speed -f com.miui.home", "AOT Speed Compile -> HyperOS Launcher")
         runStep("cmd package compile -m speed -f com.android.systemui", "AOT Speed Compile -> SystemUI")
         runStep("cmd package compile -m speed -f com.android.settings", "AOT Speed Compile -> Settings")

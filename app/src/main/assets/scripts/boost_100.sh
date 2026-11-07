@@ -21,7 +21,9 @@ device_config override windowing_frontend com.android.window.flags.defer_display
 # ==============================================================================
 # Kategori 2: HWUI RenderThread, Skia Engine & Frame Pacing (Tweaks 11-20)
 # ==============================================================================
-setprop debug.hwui.renderer skiavk
+setprop debug.hwui.renderer skiagl
+setprop debug.renderengine.backend skiaglthreaded
+setprop debug.hwui.use_gpu_pixel_buffers true
 setprop debug.hwui.target_cpu_time_percent 90
 setprop debug.hwui.use_buffer_age true
 setprop debug.hwui.use_partial_updates true
@@ -29,6 +31,8 @@ setprop debug.hwui.skip_empty_damage true
 setprop debug.hwui.use_hint_manager true
 setprop debug.hwui.app_memory_policy 1
 setprop debug.hwui.drawing_enabled true
+setprop debug.sf.predict_hwc_composition_strategy 1
+setprop debug.sqlite.wal.syncmode OFF
 device_config override core_graphics com.android.graphics.hwui.flags.initialize_gl_always false
 device_config override core_graphics com.android.graphics.hwui.flags.clip_surfaceviews false
 
@@ -181,6 +185,20 @@ service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys
 service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.background_blur_supported false" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
 service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui_blur_enabled false" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
 service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui.blur.enable false" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui.sf_fps 90" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
+
+# Wi-Fi & BLE Background Location Polling Lockdown (Eliminates Radio Jitter)
+settings put global wifi_scan_always_enabled 0
+settings put global ble_scan_always_enabled 0
+settings put global wifi_verbose_logging_enabled 0
+
+# Android 15 MGLRU (Multi-Gen LRU) RAM Optimization
+device_config put runtime_native_boot mglru true 2>/dev/null || true
+device_config put runtime_native_boot disable_mglru false 2>/dev/null || true
+setprop persist.device_config.runtime_native_boot.mglru true
+
+# Package Manager Stale Cache Trimming (Saves eMMC space)
+pm trim-caches 999G 2>/dev/null || true
 
 # SurfaceFlinger Buffer Latching & Phase Offset (4PDA / Coolapk fix for 90Hz Stutter)
 setprop debug.sf.latch_unsignaled 1
