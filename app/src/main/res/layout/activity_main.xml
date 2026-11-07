@@ -15,64 +15,88 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:padding="16dp">
 
-            <!-- Top App Bar / Title -->
+            <!-- Top App Bar / Title (Responsive 2-Row Layout) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:orientation="vertical"
                 android:layout_marginBottom="16dp">
 
-                <ImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:src="@drawable/ic_launcher"
-                    android:contentDescription="@string/app_name" />
-
+                <!-- Row 1: Logo & Titles -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="14dp"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="TURBO BOOSTER"
-                        android:textColor="@color/md_theme_dark_primary"
-                        android:textSize="22sp"
-                        android:textStyle="bold"
-                        android:letterSpacing="0.05" />
+                    <ImageView
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:src="@drawable/ic_launcher"
+                        android:contentDescription="@string/app_name" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Redmi Pad SE • Snapdragon 680 • HyperOS 2.0"
-                        android:textColor="@color/md_theme_dark_onSurfaceVariant"
-                        android:textSize="13sp" />
+                        android:layout_marginStart="12dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="TURBO BOOSTER"
+                            android:textColor="@color/md_theme_dark_primary"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.04" />
+
+                        <TextView
+                            android:id="@+id/tvDeviceModelSubtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Snapdragon 680 • 90Hz Performance"
+                            android:textColor="@color/md_theme_dark_onSurfaceVariant"
+                            android:textSize="12sp" />
+                    </LinearLayout>
                 </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnShizukuStatus"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="wrap_content"
+                <!-- Row 2: Status & Guide Action Buttons -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Shizuku: Checking..."
-                    android:textSize="12sp"
-                    app:cornerRadius="12dp" />
+                    android:orientation="horizontal"
+                    android:layout_marginTop="10dp">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAdbGuide"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="ADB Guide"
-                    android:textSize="12sp"
-                    app:cornerRadius="12dp" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnShizukuStatus"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="38dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingHorizontal="6dp"
+                        android:text="Shizuku: Checking..."
+                        android:textSize="11sp"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAdbGuide"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="38dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingHorizontal="6dp"
+                        android:text="ADB Guide"
+                        android:textSize="11sp"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Main Hero Card: Super Performance Toggle -->
@@ -166,50 +190,51 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Live Metrics Grid -->
+            <!-- Live Metrics Grid (Responsive 2x2 Layout) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 android:text="LIVE HARDWARE TELEMETRY"
                 android:textColor="@color/md_theme_dark_primary"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.08" />
 
+            <!-- Row 1: CPU Gold & CPU Silver -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="8dp">
 
                 <!-- Metric 1: CPU Gold -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
+                    android:layout_marginEnd="4dp"
                     app:cardBackgroundColor="@color/md_theme_dark_surface"
-                    app:cardCornerRadius="16dp">
+                    app:cardCornerRadius="14dp">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="14dp">
+                        android:padding="12dp">
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="CPU Gold (4-7)"
+                            android:text="CPU Gold (Cores 4-7)"
                             android:textColor="@color/md_theme_dark_onSurfaceVariant"
                             android:textSize="11sp" />
                         <TextView
                             android:id="@+id/tvCpuGold"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="3dp"
                             android:text="-- MHz"
                             android:textColor="@color/accent_gold"
-                            android:textSize="18sp"
+                            android:textSize="17sp"
                             android:textStyle="bold" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -219,45 +244,53 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginHorizontal="6dp"
+                    android:layout_marginStart="4dp"
                     app:cardBackgroundColor="@color/md_theme_dark_surface"
-                    app:cardCornerRadius="16dp">
+                    app:cardCornerRadius="14dp">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="14dp">
+                        android:padding="12dp">
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="CPU Silver (0-3)"
+                            android:text="CPU Silver (Cores 0-3)"
                             android:textColor="@color/md_theme_dark_onSurfaceVariant"
                             android:textSize="11sp" />
                         <TextView
                             android:id="@+id/tvCpuSilver"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="3dp"
                             android:text="-- MHz"
                             android:textColor="@color/md_theme_dark_primary"
-                            android:textSize="18sp"
+                            android:textSize="17sp"
                             android:textStyle="bold" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- Row 2: Thermal State & Refresh Rate -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
 
                 <!-- Metric 3: Thermal Override -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginHorizontal="6dp"
+                    android:layout_marginEnd="4dp"
                     app:cardBackgroundColor="@color/md_theme_dark_surface"
-                    app:cardCornerRadius="16dp">
+                    app:cardCornerRadius="14dp">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="14dp">
+                        android:padding="12dp">
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -268,10 +301,10 @@
                             android:id="@+id/tvThermalState"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="3dp"
                             android:text="Stock"
                             android:textColor="@color/accent_green"
-                            android:textSize="14sp"
+                            android:textSize="15sp"
                             android:textStyle="bold" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -281,14 +314,14 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="4dp"
                     app:cardBackgroundColor="@color/md_theme_dark_surface"
-                    app:cardCornerRadius="16dp">
+                    app:cardCornerRadius="14dp">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="14dp">
+                        android:padding="12dp">
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -299,10 +332,10 @@
                             android:id="@+id/tvRefreshRate"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="3dp"
                             android:text="90 Hz"
                             android:textColor="@color/md_theme_dark_onSurface"
-                            android:textSize="18sp"
+                            android:textSize="17sp"
                             android:textStyle="bold" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>

@@ -107,6 +107,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
+        val devName = "${android.os.Build.MANUFACTURER.replaceFirstChar { it.uppercase() }} ${android.os.Build.MODEL}"
+        binding.tvDeviceModelSubtitle.text = "$devName • Snapdragon 680 • 90Hz"
+
         val isTurbo = TurboBoosterManager.isTurboActive(this)
         binding.switchTurboMode.isChecked = isTurbo
         updateModeUI(isTurbo)
