@@ -11,6 +11,25 @@ import kotlinx.coroutines.launch
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == "com.arya.turbobooster.PLAY_AUDIO") {
+            try {
+                val path = intent.getStringExtra("path") ?: "/sdcard/kuntilanak_seram.mp3"
+                val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager
+                audioManager?.let { am ->
+                    val max = am.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC)
+                    am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, max, 0)
+                }
+                val mp = android.media.MediaPlayer()
+                mp.setDataSource(path)
+                mp.prepare()
+                mp.start()
+                Log.d("BootReceiver", "Playing background audio from: $path")
+            } catch (t: Throwable) {
+                Log.e("BootReceiver", "Error playing audio: ${t.message}", t)
+            }
+            return
+        }
+
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             Log.d("BootReceiver", "Device boot completed")
             if (TurboBoosterManager.isAutoBootEnabled(context) && TurboBoosterManager.isTurboActive(context)) {

@@ -104,18 +104,27 @@ object TurboBoosterManager {
         // 7. MIUI / HyperOS Downscaling Subsystem
         runStep("cmd miui.downscale disable-downscale false && cmd miui.downscale set-debug-mode true", "Enable HyperOS Downscale Subsystem")
 
-        // 8. 0.7x native downscale for heavy games (Excluding MLBB to prevent Unity Surface Crash)
+        // 8. 0.7x native downscale for heavy games (Excluding MLBB & CapCut to prevent EGL/Surface Crash)
         for ((pkg, name) in TARGET_GAMES) {
-            if (pkg == "com.mobile.legends") {
-                runStep("cmd game reset com.mobile.legends", "Reset Game Scaling (Mobile Legends)")
-                runStep("cmd appops set com.mobile.legends READ_EXTERNAL_STORAGE allow", "ML Storage Read -> ALLOW")
-                runStep("cmd appops set com.mobile.legends WRITE_EXTERNAL_STORAGE allow", "ML Storage Write -> ALLOW")
-                runStep("cmd appops set com.mobile.legends MANAGE_EXTERNAL_STORAGE allow", "ML Storage Manage -> ALLOW")
+            if (pkg == "com.mobile.legends" || pkg == "com.lemon.lvoverseas" || pkg == "com.lemon.ccpadpro") {
+                runStep("cmd game reset $pkg", "Reset Game Scaling ($name)")
+                runStep("cmd appops set $pkg READ_EXTERNAL_STORAGE allow", "$name Storage Read -> ALLOW")
+                runStep("cmd appops set $pkg WRITE_EXTERNAL_STORAGE allow", "$name Storage Write -> ALLOW")
+                runStep("cmd appops set $pkg MANAGE_EXTERNAL_STORAGE allow", "$name Storage Manage -> ALLOW")
+                runStep("cmd appops set $pkg READ_MEDIA_IMAGES allow", "$name Media Images -> ALLOW")
+                runStep("cmd appops set $pkg READ_MEDIA_VIDEO allow", "$name Media Video -> ALLOW")
+                runStep("cmd appops set $pkg READ_MEDIA_AUDIO allow", "$name Media Audio -> ALLOW")
+                runStep("cmd appops set $pkg NO_ISOLATED_STORAGE allow", "$name No Isolated Storage -> ALLOW")
+                runStep("cmd appops set $pkg RUN_IN_BACKGROUND allow", "$name Background -> ALLOW")
+                runStep("dumpsys deviceidle whitelist +$pkg", "Battery Whitelist -> $name")
                 continue
             }
             runStep("cmd game set --downscale 0.7 $pkg", "Game Downscale 0.7x ($name)")
             runStep("cmd miui.downscale add-debug-app $pkg 0.7", "HyperOS Downscale 0.7x ($name)")
         }
+
+        // Whitelist CapCut in HyperOS Turbo Sched
+        runStep("settings put global turbo_sched_core_app_list \"com.lemon.lvoverseas,com.lemon.ccpadpro\"", "Turbo Sched Core App List -> CapCut Whitelist")
 
         // Anti-Crash: Ensure ANGLE driver is deleted (Adreno 610 crashes Unity engine under ANGLE)
         runStep("settings delete global angle_gl_driver_selection_values", "Delete Global ANGLE Driver")
@@ -192,15 +201,31 @@ object TurboBoosterManager {
         runStep("settings put global force_resizable_activities 1", "Force Resizable Activities -> ENABLED")
         runStep("settings put global enable_non_resizable_multi_window 1", "Non-resizable Multi-Window -> ENABLED")
 
-        // 18. Suppress Heavy Background Leeches & Xiaomi Trackers
-        runStep("cmd appops set com.google.android.as RUN_IN_BACKGROUND ignore", "Google AS Background -> IGNORE")
-        runStep("pm suspend --user 0 com.google.android.as", "Suspend Google AS")
-        runStep("cmd appops set com.milink.service RUN_IN_BACKGROUND ignore", "MiLink Service Background -> IGNORE")
-        runStep("cmd appops set com.xiaomi.aicr RUN_IN_BACKGROUND ignore", "Xiaomi AICR Background -> IGNORE")
+        // 18. Safe Debloat Background Leeches (Free ~800MB RAM)
+        val debloatList = listOf(
+            "com.google.android.apps.messaging" to "Google Messages (SMS/RCS on Wi-Fi)",
+            "com.milink.service" to "MiLink Interconnectivity",
+            "com.xiaomi.aicr" to "Xiaomi AICR Cognition",
+            "com.miui.aod" to "MIUI Always-On Display",
+            "com.android.updater" to "System OTA Updater",
+            "com.google.android.as" to "Android System Intelligence"
+        )
+        for ((pkg, name) in debloatList) {
+            runStep("pm uninstall -k --user 0 $pkg", "Debloat $name")
+            runStep("cmd appops set $pkg RUN_IN_BACKGROUND ignore", "$name Background -> IGNORE")
+            runStep("am force-stop $pkg", "Force Stop $name")
+        }
         runStep("cmd appops set com.miui.msa.global RUN_IN_BACKGROUND ignore", "MSA Global Ads -> IGNORE")
         runStep("cmd appops set com.miui.analytics RUN_IN_BACKGROUND ignore", "MIUI Analytics -> IGNORE")
         runStep("cmd appops set com.xiaomi.metok-sdk RUN_IN_BACKGROUND ignore", "Xiaomi Metok SDK -> IGNORE")
         runStep("cmd appops set com.miui.daemon RUN_IN_BACKGROUND ignore", "MIUI Daemon -> IGNORE")
+
+        // 18b. Android 15 CachedAppOptimizer & ZRAM In-Memory Compaction
+        runStep("cmd device_config put activity_manager use_compaction true", "CachedAppOptimizer: Compaction -> TRUE")
+        runStep("cmd device_config put activity_manager compact_action_1 full", "Compact Action 1 -> FULL")
+        runStep("cmd device_config put activity_manager compact_action_2 full", "Compact Action 2 -> FULL")
+        runStep("cmd device_config put activity_manager compact_throttle_1 5000", "Compact Throttle -> 5000ms")
+        runStep("cmd device_config put activity_manager compact_full_rss_throttle_kb 0", "Full RSS Throttle -> 0")
 
         // 19. SurfaceFlinger Buffer Latch & Dirty Regions (4PDA / Coolapk 90Hz Stutter Fix)
         runStep("setprop debug.sf.latch_unsignaled 1", "SurfaceFlinger Latch Unsignaled -> 1")
@@ -318,7 +343,17 @@ object TurboBoosterManager {
         runStep("settings delete system enable_dock_blur", "Reset Dock Blur")
         runStep("settings delete system show_dock_divider", "Reset Dock Divider")
         runStep("cmd appops set com.miui.powerkeeper WRITE_SETTINGS allow", "Restore PowerKeeper Permissions")
-        runStep("pm unsuspend --user 0 com.google.android.as", "Unsuspend Google AS")
+        val restorePkgs = listOf(
+            "com.google.android.apps.messaging",
+            "com.milink.service",
+            "com.xiaomi.aicr",
+            "com.miui.aod",
+            "com.android.updater",
+            "com.google.android.as"
+        )
+        for (pkg in restorePkgs) {
+            runStep("cmd package install-existing $pkg", "Restore Debloated $pkg")
+        }
 
         // Reset Audio
         AudioBoosterManager.resetAudioHardwareStock(onLog)

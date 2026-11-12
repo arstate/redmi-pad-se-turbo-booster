@@ -20,7 +20,7 @@ cmd device_config put storage_native_boot smart_idle_maint_enabled true
 sm idle-maint run 2>/dev/null || true
 sm fstrim 2>/dev/null || true
 
-echo '[4/7] Manajemen RAM 4GB (Anti-Trim & Pangkas Cached 16)...'
+echo '[4/7] Manajemen RAM 4GB (Anti-Trim, Cached 16 & ZRAM Compaction)...'
 cmd activity memory-factor set NORMAL
 cmd device_config put activity_manager max_cached_processes 16
 cmd device_config put activity_manager_native_boot modern_queue_enabled true
@@ -28,10 +28,24 @@ settings put global activity_manager_constants 'max_cached_processes=16,low_swap
 settings put global miui_memory_extension 0
 settings put global ram_expand_size 0
 
+# Android 15 CachedAppOptimizer In-Memory Compaction Tuning
+cmd device_config put activity_manager use_compaction true
+cmd device_config put activity_manager compact_action_1 full
+cmd device_config put activity_manager compact_action_2 full
+cmd device_config put activity_manager compact_throttle_1 5000
+cmd device_config put activity_manager compact_full_rss_throttle_kb 0
+
+# Safe Debloat Background Leeches (Free up ~800MB RAM)
+for PKG in com.google.android.apps.messaging com.milink.service com.xiaomi.aicr com.miui.aod com.android.updater com.google.android.as; do
+    pm uninstall -k --user 0 $PKG 2>/dev/null
+    cmd appops set $PKG RUN_IN_BACKGROUND ignore 2>/dev/null
+    am force-stop $PKG 2>/dev/null
+done
+
 echo '[5/7] Xiaomi Native Window Downscaler (0.7x Resolution @ Adreno 610)...'
 cmd miui.downscale disable-downscale false
 cmd miui.downscale set-debug-mode true
-GAMES="com.tencent.ig com.mobile.legends com.roblox.client com.mojang.minecraftpe com.lemon.lvoverseas com.lemon.ccpadpro"
+GAMES="com.tencent.ig com.mobile.legends com.roblox.client com.mojang.minecraftpe"
 for PKG in $GAMES; do
     cmd miui.downscale add-debug-app $PKG 0.7 2>/dev/null
     cmd game mode 2 $PKG 2>/dev/null
@@ -39,6 +53,21 @@ for PKG in $GAMES; do
     cmd appops set $PKG RUN_IN_BACKGROUND allow 2>/dev/null
     cmd appops set $PKG RUN_ANY_IN_BACKGROUND allow 2>/dev/null
     am set-standby-bucket $PKG active 2>/dev/null
+done
+
+# CapCut Fix: Never downscale video editor (prevents EGL crash) + grant full storage
+for CAPCUT in com.lemon.lvoverseas com.lemon.ccpadpro; do
+    cmd game reset $CAPCUT 2>/dev/null
+    cmd appops set $CAPCUT READ_EXTERNAL_STORAGE allow 2>/dev/null
+    cmd appops set $CAPCUT WRITE_EXTERNAL_STORAGE allow 2>/dev/null
+    cmd appops set $CAPCUT MANAGE_EXTERNAL_STORAGE allow 2>/dev/null
+    cmd appops set $CAPCUT READ_MEDIA_IMAGES allow 2>/dev/null
+    cmd appops set $CAPCUT READ_MEDIA_VIDEO allow 2>/dev/null
+    cmd appops set $CAPCUT READ_MEDIA_AUDIO allow 2>/dev/null
+    cmd appops set $CAPCUT NO_ISOLATED_STORAGE allow 2>/dev/null
+    cmd appops set $CAPCUT RUN_IN_BACKGROUND allow 2>/dev/null
+    dumpsys deviceidle whitelist +$CAPCUT 2>/dev/null
+    am set-standby-bucket $CAPCUT active 2>/dev/null
 done
 
 echo '[6/7] Realtime Binder, ADPF & Touch Deadzone 0...'

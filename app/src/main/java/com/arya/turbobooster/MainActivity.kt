@@ -191,11 +191,15 @@ class MainActivity : AppCompatActivity() {
             "boost_quad_audio.sh (Quad Speaker Studio)",
             "pubg_ultimate_booster.sh (PUBG Mobile Tweak)",
             "launch_freeform.sh (Freeform Multi-Window)",
+            "📉 Terapkan Display 75% Scale (900x1440 @ 154dpi)",
+            "🖥️ Reset Display Default (1200x1920 @ 280dpi)",
+            "🧹 Debloat Bersihkan Bloatware (Hemat 1.8GB RAM)",
+            "🔄 Restore Paket Debloat Bawaan",
             "📂 Ekstrak Semua Script ke /sdcard/TurboBoosterScripts"
         )
 
         AlertDialog.Builder(this)
-            .setTitle("📜 Bundled APK Scripts (Permanen)")
+            .setTitle("📜 Bundled APK Scripts & Tools")
             .setItems(scripts) { _, which ->
                 when (which) {
                     0 -> runSelectedScript("boost_flagship_unfcker.sh")
@@ -208,6 +212,66 @@ class MainActivity : AppCompatActivity() {
                     7 -> runSelectedScript("pubg_ultimate_booster.sh")
                     8 -> runSelectedScript("launch_freeform.sh")
                     9 -> {
+                        if (!checkPrivilegeOrPrompt()) return@setItems
+                        lifecycleScope.launch {
+                            appendLog("--- Applying 75% Display Scale (900x1440 @ 154dpi) ---")
+                            val r1 = ShellExecutor.execute("wm size 900x1440", requirePrivileged = true)
+                            val r2 = ShellExecutor.execute("wm density 154", requirePrivileged = true)
+                            appendLog("Size 900x1440: ${r1.isSuccess}, Density 154: ${r2.isSuccess}")
+                            Toast.makeText(this@MainActivity, "Display 75% Scale Applied!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    10 -> {
+                        if (!checkPrivilegeOrPrompt()) return@setItems
+                        lifecycleScope.launch {
+                            appendLog("--- Resetting Display to Native (1200x1920 @ 280dpi) ---")
+                            val r1 = ShellExecutor.execute("wm size reset", requirePrivileged = true)
+                            val r2 = ShellExecutor.execute("wm density reset", requirePrivileged = true)
+                            appendLog("Size Reset: ${r1.isSuccess}, Density Reset: ${r2.isSuccess}")
+                            Toast.makeText(this@MainActivity, "Display Reset to Native!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    11 -> {
+                        if (!checkPrivilegeOrPrompt()) return@setItems
+                        lifecycleScope.launch {
+                            appendLog("--- Debloating Background Leeches ---")
+                            val pkgs = listOf(
+                                "com.google.android.apps.messaging",
+                                "com.milink.service",
+                                "com.xiaomi.aicr",
+                                "com.miui.aod",
+                                "com.android.updater",
+                                "com.google.android.as"
+                            )
+                            for (p in pkgs) {
+                                val res = ShellExecutor.execute("pm uninstall -k --user 0 $p", requirePrivileged = true)
+                                ShellExecutor.execute("cmd appops set $p RUN_IN_BACKGROUND ignore", requirePrivileged = true)
+                                ShellExecutor.execute("am force-stop $p", requirePrivileged = true)
+                                appendLog("Debloat $p: ${res.isSuccess}")
+                            }
+                            Toast.makeText(this@MainActivity, "Debloat complete! Massive RAM freed.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    12 -> {
+                        if (!checkPrivilegeOrPrompt()) return@setItems
+                        lifecycleScope.launch {
+                            appendLog("--- Restoring Debloated Packages ---")
+                            val pkgs = listOf(
+                                "com.google.android.apps.messaging",
+                                "com.milink.service",
+                                "com.xiaomi.aicr",
+                                "com.miui.aod",
+                                "com.android.updater",
+                                "com.google.android.as"
+                            )
+                            for (p in pkgs) {
+                                val res = ShellExecutor.execute("cmd package install-existing $p", requirePrivileged = true)
+                                appendLog("Restore $p: ${res.isSuccess}")
+                            }
+                            Toast.makeText(this@MainActivity, "Packages restored!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    13 -> {
                         lifecycleScope.launch {
                             val list = ScriptInstaller.extractAllScripts(this@MainActivity)
                             appendLog("Extracted ${list.size} scripts to internal & /sdcard/TurboBoosterScripts/")

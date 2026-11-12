@@ -187,6 +187,18 @@ device_config put activity_manager use_compaction false
 cmd appops set com.mobile.legends READ_EXTERNAL_STORAGE allow 2>/dev/null || true
 cmd appops set com.mobile.legends WRITE_EXTERNAL_STORAGE allow 2>/dev/null || true
 cmd appops set com.mobile.legends MANAGE_EXTERNAL_STORAGE allow 2>/dev/null || true
+
+# CapCut Media & Storage AppOps
+for c_pkg in com.lemon.lvoverseas com.lemon.ccpadpro; do
+  cmd game reset $c_pkg 2>/dev/null || true
+  cmd appops set $c_pkg READ_EXTERNAL_STORAGE allow 2>/dev/null || true
+  cmd appops set $c_pkg WRITE_EXTERNAL_STORAGE allow 2>/dev/null || true
+  cmd appops set $c_pkg MANAGE_EXTERNAL_STORAGE allow 2>/dev/null || true
+  cmd appops set $c_pkg READ_MEDIA_IMAGES allow 2>/dev/null || true
+  cmd appops set $c_pkg READ_MEDIA_VIDEO allow 2>/dev/null || true
+  cmd appops set $c_pkg READ_MEDIA_AUDIO allow 2>/dev/null || true
+  cmd appops set $c_pkg NO_ISOLATED_STORAGE allow 2>/dev/null || true
+done
 settings delete global angle_gl_driver_selection_values
 settings delete global angle_gl_driver_selection_pkgs
 cmd power set-adaptive-power-saver-enabled false
