@@ -150,10 +150,19 @@ cmd activity idle-maintenance
 # ==============================================================================
 setprop debug.turbosched.enable true
 setprop debug.turbosched.gaea.enable true
-settings put system turbo_sched_core_app_list "com.mobile.legends,com.roblox.client,com.tencent.ig,com.android.chrome,com.ss.android.ugc.trill,com.miui.home,com.whatsapp,com.facebook.katana,com.instagram.android,org.telegram.messenger"
-settings put system rt_pkg_white_list "com.whatsapp,com.google.android.youtube,com.android.chrome,com.facebook.katana,com.instagram.android,com.google.android.gm,org.telegram.messenger,com.miui.home,com.mobile.legends"
+settings put system turbo_sched_core_app_list "com.mobile.legends,com.roblox.client,com.tencent.ig,com.android.chrome,com.ss.android.ugc.trill,com.miui.home,com.whatsapp,com.facebook.katana,com.instagram.android,org.telegram.messenger,com.lemon.lvoverseas,com.lemon.ccpadpro"
+settings put system rt_pkg_white_list "com.whatsapp,com.google.android.youtube,com.android.chrome,com.facebook.katana,com.instagram.android,com.google.android.gm,org.telegram.messenger,com.miui.home,com.mobile.legends,com.lemon.lvoverseas,com.lemon.ccpadpro"
 settings put system perf_proc_game_List "com.tencent.dm,com.mobile.legends,com.miHoYo.bh3.bilibili,com.roblox.client,com.tencent.ig"
 settings put system light_speed_app "com.mobile.legends"
+# CapCut Video Editor Compatibility (Anti-Crash EGL & Scoped Storage Bypass)
+cmd game reset com.lemon.lvoverseas 2>/dev/null || true
+cmd game reset com.lemon.ccpadpro 2>/dev/null || true
+for capcut in com.lemon.lvoverseas com.lemon.ccpadpro; do
+  cmd appops set $capcut MANAGE_EXTERNAL_STORAGE allow 2>/dev/null || true
+  cmd appops set $capcut READ_MEDIA_VIDEO allow 2>/dev/null || true
+  cmd appops set $capcut READ_MEDIA_IMAGES allow 2>/dev/null || true
+  cmd appops set $capcut NO_ISOLATED_STORAGE allow 2>/dev/null || true
+done
 settings put system perf_profile 1
 settings put system performance_mode 1
 settings put system power_mode high_performance

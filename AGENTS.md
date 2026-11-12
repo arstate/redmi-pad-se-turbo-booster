@@ -164,27 +164,30 @@ app/src/main/
 ├── AndroidManifest.xml                  # Permissions, Services, Receivers, Shizuku Provider
 ├── assets/
 │   ├── audio/kuntilanak_seram.mp3       # Audio payload for audio testing service
-│   └── scripts/                         # 9 Bundled performance & gaming shell scripts
+│   └── scripts/                         # 12 Bundled performance & gaming shell scripts
 │       ├── boost_100.sh
 │       ├── boost_chrome_webview.sh
 │       ├── boost_deep_system.sh
 │       ├── boost_extreme.sh
 │       ├── boost_flagship_unfcker.sh
+│       ├── boost_pure_zram_compaction.sh
 │       ├── boost_quad_audio.sh
 │       ├── boost.sh
+│       ├── fix_swipe_home_delay.sh
 │       ├── launch_freeform.sh
-│       └── pubg_ultimate_booster.sh
+│       ├── pubg_ultimate_booster.sh
+│       └── set_zram_8gb.sh
 └── java/com/arya/turbobooster/
-    ├── AudioPlayerService.kt            # Background service playing audio feedback at max volume
-    ├── MainActivity.kt                  # Real-time dashboard, Shizuku listener, script launcher dialog
+    ├── AudioPlayerService.kt            # Background service playing audio feedback at max volume (supports embedded asset & custom path)
+    ├── MainActivity.kt                  # Real-time dashboard, Shizuku listener, script & display quick-action dialog
     ├── booster/
     │   ├── AudioBoosterManager.kt       # Quad-speaker tuning, Dolby Atmos & Harman curve unlock
     │   ├── DeviceMetrics.kt             # Real-time CPU, RAM, thermal, and refresh rate reader
-    │   ├── ScriptInstaller.kt           # Asset extractor to app private files / /data/local/tmp
+    │   ├── ScriptInstaller.kt           # Asset extractor to app private files / /sdcard/TurboBoosterScripts
     │   ├── ShellExecutor.kt             # Shizuku IPC bridge via reflection (Shizuku.newProcess)
     │   └── TurboBoosterManager.kt       # 21-step Super Performance Mode & Stock Mode orchestrator
     └── receiver/
-        ├── BootReceiver.kt              # On boot: auto-activates Turbo Mode; handles PLAY_AUDIO intent
+        ├── BootReceiver.kt              # On boot: auto-activates Turbo Mode; delegates PLAY_AUDIO intent to AudioPlayerService
         └── TurboBoosterTileService.kt   # Android Quick Settings Tile for 1-tap Turbo toggle
 ```
 
@@ -210,10 +213,14 @@ In `AndroidManifest.xml`:
 
 ### 4.4 Audio Testing Service (`AudioPlayerService`)
 - Manages audio stream volume elevation (`STREAM_MUSIC` to maximum).
-- Plays embedded asset audio (`audio/kuntilanak_seram.mp3`) with automatic completion cleanup.
+- Plays embedded asset audio (`audio/kuntilanak_seram.mp3`) with automatic completion cleanup (or accepts optional custom path via `Intent.putExtra("path", ...)`).
 - Can be triggered externally via broadcast:
   ```bash
+  # Play default embedded asset:
   adb shell am broadcast -a com.arya.turbobooster.PLAY_AUDIO
+
+  # Or play specific file path:
+  adb shell am broadcast -a com.arya.turbobooster.PLAY_AUDIO --es path "/sdcard/sound.mp3"
   ```
 
 ### 4.5 Release Artifacts

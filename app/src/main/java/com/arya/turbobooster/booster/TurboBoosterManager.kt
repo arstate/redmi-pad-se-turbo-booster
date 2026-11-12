@@ -60,7 +60,6 @@ object TurboBoosterManager {
         }
 
         var criticalSucceeded = true
-        var allSucceeded = true
 
         suspend fun runStep(cmd: String, desc: String? = null, isCritical: Boolean = false) {
             val ts = timeFormat.format(java.util.Date())
@@ -73,9 +72,8 @@ object TurboBoosterManager {
                 isSuccess = res.isSuccess
             )
             onLog(entry)
-            if (!res.isSuccess) {
-                allSucceeded = false
-                if (isCritical) criticalSucceeded = false
+            if (!res.isSuccess && isCritical) {
+                criticalSucceeded = false
             }
         }
 

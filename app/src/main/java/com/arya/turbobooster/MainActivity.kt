@@ -187,10 +187,16 @@ class MainActivity : AppCompatActivity() {
             "boost.sh (Master Full Booster)",
             "boost_extreme.sh (Extreme Gaming & CPU)",
             "boost_deep_system.sh (Deep Kernel & RAM)",
+            "boost_pure_zram_compaction.sh (Pure In-RAM zRAM Compaction)",
+            "set_zram_8gb.sh (Injeksi zRAM 8GB Expansion)",
+            "fix_swipe_home_delay.sh (Zero-Delay Navigation & Swipe)",
             "boost_chrome_webview.sh (Chrome & WebView)",
             "boost_quad_audio.sh (Quad Speaker Studio)",
             "pubg_ultimate_booster.sh (PUBG Mobile Tweak)",
             "launch_freeform.sh (Freeform Multi-Window)",
+            "🎯 Terapkan Native Tablet Mode (1200x1920 @ 205dpi)",
+            "⚡ Terapkan Full Screen Gesture (FSG + Hide Line)",
+            "🛠️ Fix CapCut EGL Surface & Full Media AppOps",
             "📉 Terapkan Display 75% Scale (900x1440 @ 154dpi)",
             "🖥️ Reset Display Default (1200x1920 @ 280dpi)",
             "🧹 Debloat Bersihkan Bloatware (Hemat 1.8GB RAM)",
@@ -207,11 +213,60 @@ class MainActivity : AppCompatActivity() {
                     2 -> runSelectedScript("boost.sh")
                     3 -> runSelectedScript("boost_extreme.sh")
                     4 -> runSelectedScript("boost_deep_system.sh")
-                    5 -> runSelectedScript("boost_chrome_webview.sh")
-                    6 -> runSelectedScript("boost_quad_audio.sh")
-                    7 -> runSelectedScript("pubg_ultimate_booster.sh")
-                    8 -> runSelectedScript("launch_freeform.sh")
-                    9 -> {
+                    5 -> runSelectedScript("boost_pure_zram_compaction.sh")
+                    6 -> runSelectedScript("set_zram_8gb.sh")
+                    7 -> runSelectedScript("fix_swipe_home_delay.sh")
+                    8 -> runSelectedScript("boost_chrome_webview.sh")
+                    9 -> runSelectedScript("boost_quad_audio.sh")
+                    10 -> runSelectedScript("pubg_ultimate_booster.sh")
+                    11 -> runSelectedScript("launch_freeform.sh")
+                    12 -> {
+                        if (!checkPrivilegeOrPrompt()) return@setItems
+                        lifecycleScope.launch {
+                            appendLog("--- Applying Native Tablet Mode (1200x1920 @ 205dpi) ---")
+                            val r1 = ShellExecutor.execute("wm size 1200x1920", requirePrivileged = true)
+                            val r2 = ShellExecutor.execute("wm density 205", requirePrivileged = true)
+                            appendLog("Size 1200x1920: ${r1.isSuccess}, Density 205: ${r2.isSuccess}")
+                            Toast.makeText(this@MainActivity, "Native Tablet Mode (205dpi) Applied!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    13 -> {
+                        if (!checkPrivilegeOrPrompt()) return@setItems
+                        lifecycleScope.launch {
+                            appendLog("--- Applying Full Screen Gesture Navigation (FSG + Hide Line) ---")
+                            val r1 = ShellExecutor.execute("settings put global force_fsg_nav_bar 1", requirePrivileged = true)
+                            val r2 = ShellExecutor.execute("settings put system force_fsg_nav_bar 1", requirePrivileged = true)
+                            val r3 = ShellExecutor.execute("settings put global hide_gesture_line 1", requirePrivileged = true)
+                            val r4 = ShellExecutor.execute("settings put system miui_home_animation_rate 2", requirePrivileged = true)
+                            appendLog("FSG Global: ${r1.isSuccess}, FSG System: ${r2.isSuccess}, Hide Line: ${r3.isSuccess}, Fast Curve: ${r4.isSuccess}")
+                            Toast.makeText(this@MainActivity, "Zero-Delay Gesture Nav Applied!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    14 -> {
+                        if (!checkPrivilegeOrPrompt()) return@setItems
+                        lifecycleScope.launch {
+                            appendLog("--- Fixing CapCut EGL Surface & Granting Media AppOps ---")
+                            val capcutPkgs = listOf("com.lemon.lvoverseas", "com.lemon.ccpadpro")
+                            for (pkg in capcutPkgs) {
+                                ShellExecutor.execute("cmd game reset $pkg", requirePrivileged = true)
+                                ShellExecutor.execute("cmd appops set $pkg READ_EXTERNAL_STORAGE allow", requirePrivileged = true)
+                                ShellExecutor.execute("cmd appops set $pkg WRITE_EXTERNAL_STORAGE allow", requirePrivileged = true)
+                                ShellExecutor.execute("cmd appops set $pkg MANAGE_EXTERNAL_STORAGE allow", requirePrivileged = true)
+                                ShellExecutor.execute("cmd appops set $pkg READ_MEDIA_IMAGES allow", requirePrivileged = true)
+                                ShellExecutor.execute("cmd appops set $pkg READ_MEDIA_VIDEO allow", requirePrivileged = true)
+                                ShellExecutor.execute("cmd appops set $pkg READ_MEDIA_AUDIO allow", requirePrivileged = true)
+                                ShellExecutor.execute("cmd appops set $pkg NO_ISOLATED_STORAGE allow", requirePrivileged = true)
+                                ShellExecutor.execute("cmd appops set $pkg RUN_IN_BACKGROUND allow", requirePrivileged = true)
+                                ShellExecutor.execute("dumpsys deviceidle whitelist +$pkg", requirePrivileged = true)
+                            }
+                            ShellExecutor.execute("settings put global enable_freeform_support 1", requirePrivileged = true)
+                            ShellExecutor.execute("settings put global force_resizable_activities 1", requirePrivileged = true)
+                            ShellExecutor.execute("settings put global enable_non_resizable_multi_window 1", requirePrivileged = true)
+                            appendLog("CapCut & Multi-Window Permissions configured successfully.")
+                            Toast.makeText(this@MainActivity, "CapCut EGL & Storage Permissions Fixed!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    15 -> {
                         if (!checkPrivilegeOrPrompt()) return@setItems
                         lifecycleScope.launch {
                             appendLog("--- Applying 75% Display Scale (900x1440 @ 154dpi) ---")
@@ -221,7 +276,7 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this@MainActivity, "Display 75% Scale Applied!", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    10 -> {
+                    16 -> {
                         if (!checkPrivilegeOrPrompt()) return@setItems
                         lifecycleScope.launch {
                             appendLog("--- Resetting Display to Native (1200x1920 @ 280dpi) ---")
@@ -231,7 +286,7 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this@MainActivity, "Display Reset to Native!", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    11 -> {
+                    17 -> {
                         if (!checkPrivilegeOrPrompt()) return@setItems
                         lifecycleScope.launch {
                             appendLog("--- Debloating Background Leeches ---")
@@ -252,7 +307,7 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this@MainActivity, "Debloat complete! Massive RAM freed.", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    12 -> {
+                    18 -> {
                         if (!checkPrivilegeOrPrompt()) return@setItems
                         lifecycleScope.launch {
                             appendLog("--- Restoring Debloated Packages ---")
@@ -271,7 +326,7 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this@MainActivity, "Packages restored!", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    13 -> {
+                    19 -> {
                         lifecycleScope.launch {
                             val list = ScriptInstaller.extractAllScripts(this@MainActivity)
                             appendLog("Extracted ${list.size} scripts to internal & /sdcard/TurboBoosterScripts/")

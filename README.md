@@ -109,10 +109,10 @@ To prevent EGL surface errors and crashes during video timeline editing or windo
 │       ├── AndroidManifest.xml        # Includes ShizukuProvider & TileService
 │       ├── assets/
 │       │   ├── audio/                 # Audio payload assets
-│       │   └── scripts/               # 9 Bundled performance & gaming shell scripts
+│       │   └── scripts/               # 12 Bundled performance & gaming shell scripts
 │       └── java/com/arya/turbobooster/
-│           ├── AudioPlayerService.kt  # Audio feedback service
-│           ├── MainActivity.kt        # Telemetry UI, script picker, display toggles
+│           ├── AudioPlayerService.kt  # Audio feedback service (embedded asset & custom path)
+│           ├── MainActivity.kt        # Telemetry UI, script picker, tablet display & gesture toggles
 │           ├── booster/               # ShellExecutor, TurboBoosterManager, AudioBoosterManager
 │           └── receiver/              # BootReceiver & TurboBoosterTileService
 ├── boost_100_celah_master.sh          # 100 deep system tweaks across 10 categories

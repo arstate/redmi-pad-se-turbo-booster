@@ -7,6 +7,7 @@ import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.IBinder
 import android.util.Log
+import java.io.File
 
 class AudioPlayerService : Service() {
     private var mediaPlayer: MediaPlayer? = null
@@ -19,21 +20,35 @@ class AudioPlayerService : Service() {
                 am.setStreamVolume(AudioManager.STREAM_MUSIC, max, 0)
             }
             mediaPlayer?.release()
-            val afd = assets.openFd("audio/kuntilanak_seram.mp3")
-            mediaPlayer = MediaPlayer().apply {
-                setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                afd.close()
-                prepare()
-                setVolume(1.0f, 1.0f)
-                start()
-                setOnCompletionListener {
-                    Log.d("AudioPlayerService", "Kuntilanak playback finished")
-                    stopSelf()
+
+            val customPath = intent?.getStringExtra("path")
+            val mp = MediaPlayer()
+
+            if (!customPath.isNullOrBlank() && File(customPath).exists()) {
+                Log.d("AudioPlayerService", "Playing audio from custom path: $customPath")
+                mp.setDataSource(customPath)
+                mp.prepare()
+            } else {
+                Log.d("AudioPlayerService", "Playing embedded asset audio: audio/kuntilanak_seram.mp3")
+                val afd = assets.openFd("audio/kuntilanak_seram.mp3")
+                try {
+                    mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                    mp.prepare()
+                } finally {
+                    afd.close()
                 }
             }
-            Log.d("AudioPlayerService", "PLAYING_KUNTILANAK_SUCCESS!")
+
+            mp.setVolume(1.0f, 1.0f)
+            mp.setOnCompletionListener {
+                Log.d("AudioPlayerService", "Audio playback finished")
+                stopSelf()
+            }
+            mediaPlayer = mp
+            mp.start()
+            Log.d("AudioPlayerService", "PLAYING_AUDIO_SUCCESS!")
         } catch (t: Throwable) {
-            Log.e("AudioPlayerService", "Error: ${t.message}", t)
+            Log.e("AudioPlayerService", "Error in AudioPlayerService: ${t.message}", t)
             stopSelf()
         }
         return START_NOT_STICKY

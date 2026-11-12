@@ -13,19 +13,13 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == "com.arya.turbobooster.PLAY_AUDIO") {
             try {
-                val path = intent.getStringExtra("path") ?: "/sdcard/kuntilanak_seram.mp3"
-                val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager
-                audioManager?.let { am ->
-                    val max = am.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC)
-                    am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, max, 0)
+                val serviceIntent = Intent(context, com.arya.turbobooster.AudioPlayerService::class.java).apply {
+                    intent.getStringExtra("path")?.let { putExtra("path", it) }
                 }
-                val mp = android.media.MediaPlayer()
-                mp.setDataSource(path)
-                mp.prepare()
-                mp.start()
-                Log.d("BootReceiver", "Playing background audio from: $path")
+                context.startService(serviceIntent)
+                Log.d("BootReceiver", "Started AudioPlayerService via com.arya.turbobooster.PLAY_AUDIO broadcast")
             } catch (t: Throwable) {
-                Log.e("BootReceiver", "Error playing audio: ${t.message}", t)
+                Log.e("BootReceiver", "Error delegating to AudioPlayerService: ${t.message}", t)
             }
             return
         }
