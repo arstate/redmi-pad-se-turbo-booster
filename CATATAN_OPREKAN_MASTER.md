@@ -1,0 +1,383 @@
+# 📋 CATATAN MASTER OPREKAN — REDMI PAD SE & ANDROID CRAFT SUITE
+
+> **Tanggal Pembuatan**: 14 November 2026  
+> **Target Device**: Xiaomi Redmi Pad SE (Codename: `xun` / `xun_id`)  
+> **Platform SoC**: Qualcomm Snapdragon 680 4G (SM6225) 6nm — Adreno 610 GPU  
+> **Sistem Operasi**: Xiaomi HyperOS 2.0 (Android 15 — Vanilla Ice Cream)  
+> **Akses Rootless**: Wi-Fi ADB (Port dinamis mDNS) + Shizuku API (UID 2000 Shell Privileges)  
+> **Repository GitHub**: [https://github.com/arstate/redmi-pad-se-turbo-booster](https://github.com/arstate/redmi-pad-se-turbo-booster)  
+> **Mirror Download Publik**: [Gofile Portal](https://gofile.io/d/yJuOtjCt) | [Direct Litterbox APK](https://litter.catbox.moe/cpdkyd.apk)
+
+---
+
+## 📑 DAFTAR ISI
+1. [Spesifikasi Hardware & Analisis Masalah Bawaan](#1-spesifikasi-hardware--analisis-masalah-bawaan)
+2. [Aplikasi 1: Redmi Pad SE Turbo Booster v1.3.5](#2-aplikasi-1-redmi-pad-se-turbo-booster-v135)
+3. [Daftar 100 Celah Oprekan Sistem (boost_100_celah_master.sh)](#3-daftar-100-celah-oprekan-sistem-boost_100_celah_mastersh)
+4. [Kompaksi Memori & Solusi zRAM 8GB murni di RAM Fisik](#4-kompaksi-memori--solusi-zram-8gb-murni-di-ram-fisik)
+5. [Tampilan Desktop Tablet (205 DPI) & Navigasi Gestur 0ms](#5-tampilan-desktop-tablet-205-dpi--navigasi-gestur-0ms)
+6. [Solusi Crash Video Editor CapCut & Multi-Window](#6-solusi-crash-video-editor-capcut--multi-window)
+7. [Ekosistem Android Craft: WordCraft, FigCraft & LightCraft](#7-ekosistem-android-craft-wordcraft-figcraft--lightcraft)
+8. [Daftar File Project, Skrip Shell & Struktur Direktori](#8-daftar-file-project-skrip-shell--struktur-direktori)
+9. [Alur Build, Compile & Deployment ADB untuk Agent Masa Depan](#9-alur-build-compile--deployment-adb-untuk-agent-masa-depan)
+
+---
+
+## 1. Spesifikasi Hardware & Analisis Masalah Bawaan
+
+| Komponen | Spesifikasi Pabrik | Bottleneck Bawaan HyperOS | Solusi Oprekan Kita |
+|---|---|---|---|
+| **SoC** | Snapdragon 680 4G (4x 2.4GHz Gold + 4x 1.9GHz Silver) | Dynamic throttling & drop clock saat thermal naik | Lock clock performa via `cmd power set-fixed-performance-mode-enabled true` & `thermalservice override-status 0` |
+| **GPU** | Adreno 610 | Driver ANGLE bawaan sering crash di MLBB/Unity; render blur berat | Hapus override ANGLE, switch backend ke `skiaglthreaded`, matikan window & dock blurs |
+| **Storage** | 128GB eMMC 5.1 (~20-30 MB/s random write) | Fitur "Memory Extension" menulis swap ke flash eMMC bikin UI freeze | Matikan total swap flash eMMC (`isExternalRamOn 0`), alihkan swap murni ke zRAM LPDDR4X (17 GB/s) |
+| **RAM** | 4GB LPDDR4X | Sering reload aplikasi karena budget tier HyperOS pelit | Spoofing Tier-3 Flagship via MQSAS Call 21 (`v:1,c:3,g:3`), aktifkan Android 15 MGLRU |
+| **Layar** | 11.0" IPS LCD 1200x1920 90Hz | Sering drop ke 60Hz dinamis; DPI bawaan (270+) bikin tampilan mirip HP melar | Kunci permanen 90Hz (`fps_limit 90`), set resolusi native ke `wm density 205` (tampilan tablet desktop) |
+| **Navigasi** | Tombol 3 titik atau gestur bergaris | Ada jeda 150-200ms pada garis gestur bawah | Aktifkan `force_fsg_nav_bar=1` & `hide_gesture_line=1` (0ms instant swipe-to-home) |
+
+---
+
+## 2. Aplikasi 1: Redmi Pad SE Turbo Booster v1.3.5
+
+- **Package Name**: `com.arya.turbobooster`
+- **Versi**: `versionCode = 9`, `versionName = "1.3.5"` (Updated & Verified live via ADB).
+- **Lokasi Project**: `/mnt/HDD-2/BACKUP LINUX/FILE DATA/REDMI PAD SE BOOST/`
+- **File Binary**: `/mnt/HDD-2/BACKUP LINUX/FILE DATA/REDMI PAD SE BOOST/release/TurboBooster.apk`
+- **Fitur & Arsitektur Utama**:
+  1. **Shizuku IPC Bridge (`ShellExecutor.kt`)**: Mengeksekusi command shell tingkat `UID 2000` (setara kabel USB PC) langsung dari tablet tanpa PC dan tanpa root Magisk/KernelSU.
+  2. **Super Performance Mode Orchestrator (`TurboBoosterManager.kt`)**: 21 langkah aktivasi sistem terpadu (Spoofing MQSAS, CPU clock lock, zRAM compaction, SkiaGL backend, 90Hz lock, kill telemetry).
+  3. **AudioPlayerService (`AudioPlayerService.kt`)**: Background foreground service untuk audio feedback uji quad-speaker pada volume maksimal (mendukung embedded asset `kuntilanak_seram.mp3` dan custom file path).
+  4. **Quad-Speaker Studio Tuning (`AudioBoosterManager.kt`)**: Tuning 4 speaker Dolby Atmos, ekspansi stereo stage, dan preset kurva frekuensi Harman Kardon.
+  5. **Quick Settings Tile (`TurboBoosterTileService.kt`)**: Tombol tile di control center / status bar atas Android untuk on/off Turbo Mode 1-klik.
+  6. **Boot Receiver (`BootReceiver.kt`)**: Mengaktifkan Turbo Mode secara otomatis saat tablet selesai booting (restart).
+
+---
+
+## 3. Daftar 100 Celah Oprekan Sistem (`boost_100_celah_master.sh`)
+
+Skrip ini dieksekusi melalui Shizuku Shell (`sh /sdcard/TurboBoosterScripts/boost_100.sh` atau langsung via APK):
+
+### Kategori 1: SurfaceFlinger & Compositor Pipeline (1–10)
+1. `debug.sf.disable_client_composition_cache 1` — Hapus cache komposisi client lambat.
+2. `debug.sf.disable_backpressure 1` — Hilangkan penahanan backpressure pada buffer render.
+3. `debug.sf.drop_missed_frames 1` — Jangan tunggu frame terlambat, langsung render frame terbaru.
+4. `debug.sf.vulkan_renderengine true` — Paksa renderengine SurfaceFlinger berbasis Vulkan.
+5. `debug.sf.multithreaded_present true` — Multi-threaded present frame ke layar.
+6. `debug.sf.fifo_priority_for_major_ui_processes true` — Prioritas FIFO real-time untuk proses UI utama.
+7. `debug.sf.enable_frame_rate_override true` — Izinkan override frame rate langsung.
+8. `debug.sf.vsync_event_phase_offset_ns 0` — Nolkan latency fasa VSYNC event.
+9. `debug.sf.vsync_sf_event_phase_offset_ns 0` — Nolkan latency fasa VSYNC SurfaceFlinger.
+10. `debug.sf.early_phase_offset_ns 0` & `early_app_phase_offset_ns 0` — Percepat waktu respons frame aplikasi.
+
+### Kategori 2: HWUI RenderThread & Skia Engine (11–20)
+11. `debug.hwui.renderer skiagl` — Paksa HWUI menggunakan SkiaGL.
+12. `debug.renderengine.backend skiaglthreaded` — Gunakan multi-threaded SkiaGL untuk pipeline render.
+13. `debug.hwui.use_gpu_pixel_buffers true` — Gunakan PBO (Pixel Buffer Objects) langsung di VRAM GPU.
+14. `debug.hwui.target_cpu_time_percent 90` — Tingkatkan alokasi target waktu CPU untuk render UI hingga 90%.
+15. `debug.hwui.render_ahead 1` — Siapkan 1 frame di depan untuk mencegah stuttering scrolling.
+16. `debug.sqlite.wal.syncmode OFF` — Matikan disk sync blocking pada database SQLite (UI tidak menunggu storage eMMC).
+17. `debug.hwui.clip_surfaceviews 1` — Optimasi clipping SurfaceView.
+18. `debug.hwui.show_dirty_regions 0` — Matikan kalkulasi dirty regions yang membebani GPU.
+19. `debug.hwui.profile false` — Matikan profiling overhead pada produksi.
+20. `debug.hwui.disable_draw_defer 0` — Pertahankan deferral draw call optimal.
+
+### Kategori 3: Qualcomm Bengal / Adreno 610 Driver Stabilization (21–30)
+21. Hapus override ANGLE driver (`settings delete global angle_gl_driver_selection_pkgs`) — Fix game MLBB/Unity force close.
+22. `debug.sf.latch_unsignaled 1` — Latching buffer instan tanpa menunggu sinyal hardware lambat.
+23. `debug.sf.enable_hwc_vds 1` — Aktifkan Hardware Composer Virtual Display Service.
+24. Bypass Android Phantom Process Killer: `device_config put activity_manager max_phantom_processes 2147483647`.
+25. `pm disable-user com.miui.analytics` — Matikan daemon tracker analitik Xiaomi.
+26. `pm disable-user com.miui.msa.global` — Matikan daemon iklan MIUI System Ads.
+27. `pm disable-user com.xiaomi.metok-sdk` — Matikan pelacak metrik lokasi/telemetri.
+28. `pm disable-user com.miui.daemon` — Matikan daemon background pemboros RAM.
+29. `setprop persist.vendor.qti.games.gt.enable true` — Aktifkan Qualcomm Game Turbo acceleration.
+30. `setprop ro.vendor.qti.sys.fw.bg_apps_limit 32` — Tingkatkan limit background app RAM LPDDR4X.
+
+### Kategori 4: Display Refresh Rate & Panel Governance (31–40)
+31. `settings put system min_refresh_rate 90.0` — Kunci refresh rate minimal 90Hz.
+32. `settings put system peak_refresh_rate 90.0` — Kunci refresh rate maksimal 90Hz.
+33. `settings put global fps_limit 90` — Bypass lock 60fps bawaan sistem.
+34. `settings put secure refresh_rate_mode 2` — Mode paksa refresh rate tinggi HyperOS.
+35. `setprop persist.vendor.power.dfps.level 90` — Dynamic FPS level terkunci di 90.
+36. `settings put system thermal_limit_refresh_rate 0` — Abaikan sensor suhu yang suka menurunkan layar ke 60Hz.
+37. `setprop debug.sf.set_idle_timer_ms 0` — Matikan timer idle layar agar tidak drop ke 30Hz saat membaca.
+38. `settings put system user_refresh_rate 90` — Override preferensi user ke 90Hz.
+39. `settings put system screen_refresh_rate 90` — Kunci display panel refresh rate.
+40. `setprop ro.surface_flinger.has_wide_color_display true` — Maksimalkan gamut warna 10-bit IPS.
+
+### Kategori 5: ADPF (Android Dynamic Performance Framework) & PowerHAL (41–50)
+41. `setprop debug.adpf.gpu_work_duration 1` — Aktifkan telemetri waktu kerja GPU ke PowerHAL.
+42. `setprop debug.adpf.use_fmq_channel true` — Gunakan Fast Message Queue IPC untuk respon instan.
+43. `setprop debug.hwui.adpf_gpu_hint true` — Kirim hint beban render UI langsung ke GPU Adreno.
+44. `cmd power set-adaptive-power-policy 0` — Matikan pembatasan daya adaptif agresif.
+45. `setprop vendor.powerhal.adpf.enable true` — Aktifkan PowerHAL ADPF Snapdragon 680.
+46. `setprop vendor.perf.gestureflingboost.enable true` — Boost frekuensi CPU saat jari melakukan flick/fling scroll.
+47. `setprop persist.sys.turbosched.touch_boost true` — Xiaomi TurboSched boost frekuensi seketika saat layar disentuh.
+48. `setprop persist.sys.power.boost_on_launch true` — Boost clock ke 2.4GHz saat aplikasi dibuka.
+49. `setprop ro.config.low_ram false` — Pastikan sistem tahu RAM bukan Android Go 2GB.
+50. `settings put global low_power_trigger_level 0` — Cegah trigger mode hemat daya otomatis.
+
+### Kategori 6: ART Runtime, Dexopt & Ahead-Of-Time (AOT) Compilation (51–60)
+51. `cmd package compile -m speed -f com.android.systemui` — Kompilasi biner SystemUI mode mesin murni (speed).
+52. `cmd package compile -m speed -f com.android.settings` — Kompilasi biner Settings mode speed.
+53. `cmd package compile -m speed -f com.miui.home` — Kompilasi launcher HyperOS agar scrolling aplikasi 0-drop frame.
+54. `setprop dalvik.vm.dex2oat-filter speed` — Filter kompilasi aplikasi background default ke speed.
+55. `setprop dalvik.vm.dex2oat-threads 4` — Gunakan 4 core Kryo Gold untuk kompilasi dex2oat cepat.
+56. `setprop dalvik.vm.image-dex2oat-filter speed` — Kompilasi boot image sistem ke mode speed.
+57. `setprop dalvik.vm.reg_alloc_no_output_overlap true` — Alokasi register dalvik optimal tanpa overlap.
+58. `setprop dalvik.vm.compact_object_header true` — Kompres header objek Java untuk menghemat memori heap.
+59. `setprop dalvik.vm.usejit true` — Aktifkan Just-In-Time compiler tier-2.
+60. `setprop dalvik.vm.usejitprofiles true` — Gunakan profil JIT berbasis frekuensi penggunaan aplikasi.
+
+### Kategori 7: Memory Architecture & LMKD Tuning (61–70)
+61. `setprop persist.miui.extm.enable 0` — Matikan fitur "Ekstensi Memori" palsu di storage flash eMMC.
+62. `settings put global ram_expand_size 0` — Nolkan alokasi swap file di disk storage.
+63. `setprop persist.sys.miui.isExternalRamOn 0` — Konfirmasi status external RAM off di HyperOS.
+64. `device_config put activity_manager use_compaction true` — Aktifkan kompaksi memori murni RAM.
+65. `device_config put activity_manager compact_proactive true` — Kompaksi proaktif sebelum memori habis.
+66. `device_config put activity_manager compact_full_rss_throttle_ms 5000` — Interval kompaksi 5 detik.
+67. `cmd activity memory-factor set NORMAL` — Paksa status LMKD selalu pada faktor NORMAL (mencegah app ditutup paksa).
+68. `setprop ro.lmk.kill_heaviest_task false` — Jangan bunuh aplikasi berat yang sedang dipakai user.
+69. `setprop ro.lmk.promote_to_cached true` — Pertahankan aplikasi di cache RAM agar cepat dibuka kembali.
+70. `setprop ro.lmk.use_minfree_levels true` — Gunakan ambang batas aman minfree.
+
+### Kategori 8: Storage I/O & SQLite In-Memory Caching (71–80)
+71. `setprop debug.sqlite.allow_temp_tables true` — Gunakan tabel temporary in-memory untuk database query cepat.
+72. `setprop persist.sys.smart_idle_maint_enabled 1` — Aktifkan fstrim maintenance pintar saat idle.
+73. Eksekusi `sm fstrim` — Bersihkan blok sampah flash eMMC 5.1 untuk memulihkan kecepatan write acak.
+74. `setprop ro.sys.sdcardfs false` — Bypass overhead lapisan sdcardfs lama.
+75. `setprop debug.sqlite.wal.autocheckpoint 1000` — Checkpoint WAL SQLite optimal.
+76. `setprop vold.post_fs_data_done 1` — Flag filesystem ready.
+77. `setprop debug.stagefright.ccodec 4` — Hardware codec acceleration untuk video decoding.
+78. `setprop media.stagefright.enable-player true` — Stagefright native player hardware pipe.
+79. `setprop media.stagefright.enable-http true` — Buffer streaming audio/video hardware pipe.
+80. `setprop media.stagefright.enable-aac true` — Hardware decode audio AAC latency rendah.
+
+### Kategori 9: Proprietary Xiaomi HyperOS 2.0 TurboSched (81–90)
+81. `setprop debug.turbosched.enable true` — Aktifkan engine scheduler internal HyperOS.
+82. `setprop persist.sys.turbosched.enable true` — Kunci permanen TurboSched di reboot.
+83. `setprop persist.sys.turbosched.turbo_sched_core_app_list "com.arya.turbobooster,com.artcraft.wordcraft,com.artcraft.figcraft,com.artcraft.lightcraft,com.lemon.lvoverseas"` — Prioritas CPU core tertinggi untuk aplikasi kerja dan booster kita.
+84. `cmd power set-mode 0` (High Performance Mode) — Aktifkan profil baterai "Performa Tinggi" HyperOS.
+85. `setprop persist.sys.thermal.config /vendor/etc/thermal.highperf.conf` — Arahkan ke config thermal performa.
+86. `setprop ro.vendor.perf.scroll_opt true` — Optimasi khusus fluiditas scrolling HyperOS.
+87. `setprop persist.vendor.qti.core_ctl_min_cpu 4` — Pastikan 4 core kecil tidak pernah dimatikan total.
+88. `setprop persist.vendor.qti.core_ctl_max_cpu 8` — Izinkan utilisasi 8 core sekaligus saat multitasking.
+89. `setprop ro.vendor.qti.sys.fw.empty_app_percent 50` — Berikan 50% ruang cache untuk aplikasi kosong.
+90. `setprop ro.vendor.qti.sys.fw.trim_empty_percent 100` — Pembersihan agresif hanya pada proses zombie.
+
+### Kategori 10: Tablet Touch Digitizer & Power Management (91–100)
+91. `cmd thermalservice override-status 0` — Override sensor suhu ke 0 (mencegah CPU drop ke 1.1GHz saat hangat).
+92. `cmd power set-fixed-performance-mode-enabled true` — Kunci clock Snapdragon 680 di 2.40 GHz & 1.90 GHz konstan.
+93. `settings put global wifi_scan_always_enabled 0` — Matikan scanning Wi-Fi background pembuat micro-stutter saat main game/kerja.
+94. `settings put global ble_scan_always_enabled 0` — Matikan scanning Bluetooth LE background.
+95. `device_config put runtime_native_boot mglru true` — Aktifkan Multi-Gen LRU (fitur kernel memori mutakhir Android 15).
+96. `service call miui.mqsas.MqsasService 21 i32 1 s16 "SurfaceFlinger" s16 "90"` — Backdoor MQSAS kunci SurfaceFlinger 90 FPS.
+97. `settings put system touch_response_speed 1` — Kecepatan polling sampling digitizer sentuh dinaikkan ke level maksimal.
+98. `settings put system touch_gesture_speed 2` — Sensitivitas deteksi gestur layar HyperOS maksimal.
+99. `settings put secure assistant_on_nav_gesture 0` — Matikan trigger Google Assistant di sudut bawah (hilangkan false swipe).
+100. `settings put secure search_press_hold_nav_handle 0` — Matikan jeda Circle to Search pada navigasi gestur.
+
+---
+
+## 4. Kompaksi Memori & Solusi zRAM 8GB Murni di RAM Fisik
+
+### Mengapa Memory Extension Bawaan HyperOS Dihapus?
+Fitur "Penambahan Memori 4GB" bawaan Xiaomi membuat swap file di flash disk eMMC 5.1. Kecepatan tulis acak eMMC 5.1 hanya **20 MB/s**. Ketika RAM penuh, Android mulai memindahkan memori ke eMMC, menyebabkan tablet freeze selama 1–3 detik (stutter parah).
+
+### Solusi Kita (`boost_pure_zram_compaction.sh` & `set_zram_8gb.sh`):
+1. Mematikan swap file eMMC total:
+   ```bash
+   setprop persist.miui.extm.enable 0
+   setprop persist.sys.miui.isExternalRamOn 0
+   settings put global ram_expand_size 0
+   ```
+2. Menyetel ukuran zRAM ke 8192 MB (8GB terkompresi) menggunakan backdoor MQSAS:
+   ```bash
+   service call miui.mqsas.MqsasService 21 i32 1 s16 "persist.sys.zram_size" s16 "8192"
+   service call miui.mqsas.MqsasService 21 i32 1 s16 "persist.miui.extm.bdsize" s16 "8192"
+   ```
+3. Reroute swap murni ke chip LPDDR4X fisik yang memiliki bandwidth **17 GB/s** (850x lebih cepat daripada flash eMMC) menggunakan kompresi LZ4/ZSTD in-memory.
+
+---
+
+## 5. Tampilan Desktop Tablet (205 DPI) & Navigasi Gestur 0ms
+
+### Density Tablet Desktop (`wm density 205`)
+- Resolusi fisik: `1200 x 1920` (16:10).
+- Jika diset di atas 260 DPI: HyperOS memperlakukan tablet seperti HP raksasa (icon membesar, dock hilang, layout 1 kolom sempit).
+- Pada **`wm density 205`**:
+  * Lebar logis landscape: $1920 / (205/160) \approx 1498\text{ dp}$ (Desktop Class).
+  * Lebar logis portrait: $1200 / (205/160) \approx 936\text{ dp}$.
+  * Menghasilkan: Multi-column view pada Settings, taskbar/dock bawah desktop permanen, kanvas editing luas, dan layout tablet Android murni.
+- Command:
+  ```bash
+  adb shell wm size 1200x1920
+  adb shell wm density 205
+  ```
+
+### Navigasi Gestur 0ms (`fix_swipe_home_delay.sh`)
+- Menghilangkan navigasi 3 tombol klasik dan mengaktifkan gesture full screen:
+  ```bash
+  settings put global force_fsg_nav_bar 1
+  settings put system force_fsg_nav_bar 1
+  ```
+- Menghilangkan gesture line putih di bawah layar (`hide_gesture_line 1`). Hal ini membuang algoritma "jeda tunggu 150-200ms" bawaan Xiaomi yang biasanya menunggu apakah user mau swipe ganti app atau swipe pulang ke home. Hasilnya: **Swipe to home seketika (0ms response)**.
+- Skala animasi diatur ke `0.35x` (atau `0.0x` untuk instant teleport).
+
+---
+
+## 6. Solusi Crash Video Editor CapCut & Multi-Window
+
+Saat mengaktifkan downscaler resolusi layar (`cmd miui.downscale add-debug-app`), aplikasi video editor seperti **CapCut** (`com.lemon.lvoverseas` / `com.lemon.ccpadpro`) mengalami crash EGL context (layar preview video hitam / render gagal).
+
+### Perbaikan yang Diterapkan:
+1. **Pengecualian Mutlak:** Paket CapCut **dilarang keras** dimasukkan ke daftar downscaler miui.
+2. **Reset Game Mode Policy:**
+   ```bash
+   cmd game reset com.lemon.lvoverseas
+   cmd game reset com.lemon.ccpadpro
+   ```
+3. **Bypass Scoped Storage (Media AppOps Allow):**
+   ```bash
+   for PKG in com.lemon.lvoverseas com.lemon.ccpadpro; do
+     cmd appops set $PKG READ_EXTERNAL_STORAGE allow
+     cmd appops set $PKG WRITE_EXTERNAL_STORAGE allow
+     cmd appops set $PKG MANAGE_EXTERNAL_STORAGE allow
+     cmd appops set $PKG READ_MEDIA_IMAGES allow
+     cmd appops set $PKG READ_MEDIA_VIDEO allow
+     cmd appops set $PKG READ_MEDIA_AUDIO allow
+     cmd appops set $PKG NO_ISOLATED_STORAGE allow
+   done
+   ```
+4. **Aktifkan Freeform & Multi-Window:**
+   ```bash
+   settings put global enable_freeform_support 1
+   settings put global force_resizable_activities 1
+   settings put global enable_non_resizable_multi_window 1
+   setprop persist.sys.freeform_window true
+   ```
+
+---
+
+## 7. Ekosistem Android Craft: WordCraft, FigCraft & LightCraft
+
+Direktori: `/mnt/HDD-2/BACKUP LINUX/FILE DATA/SOFTWARE LINUX/ANDROID CRAFT/`
+
+### A. WordCraft v0.15.2 (`com.artcraft.wordcraft`)
+1. **Mode Fullscreen Murni (Immersive Sticky):**
+   - Status bar atas (indikator baterai, jam, sinyal, ikon notifikasi) serta bottom navigation bar disembunyikan 100%.
+   - Menggunakan `WindowInsetsControllerCompat` untuk menyembunyikan `WindowInsetsCompat.Type.systemBars()` secara permanen.
+2. **Integrasi Android SAF Document Picker:**
+   - Tombol export/save tidak lagi menulis ke path lokal statis yang tidak bisa diakses user.
+   - Mengirim intent native Android: `Intent(Intent.ACTION_CREATE_DOCUMENT)` / `ACTION_OPEN_DOCUMENT_TREE` dengan MIME type dokumen yang sesuai, memunculkan popup direktori Android agar user bisa memilih folder unduhan/dokumen internal sesuka hati.
+3. **Icon DevCraft:** Memakai ikon modern resolusi tinggi DevCraft resmi.
+
+### B. FigCraft v0.20.1 (`com.artcraft.figcraft`)
+1. **Arsitektur Rust Native ARM64:**
+   - Dibangun murni menggunakan bahasa Rust, framework GUI `eframe` / `egui`, dan dikompilasi ke binary native Android `aarch64-linux-android` via Android NDK.
+2. **Native Drag and Drop File/Foto:**
+   - Mendengarkan event dropped files langsung dari event loop egui (`ctx.input(|i| !i.raw.dropped_files.is_empty())`).
+   - File gambar (PNG, JPG, SVG) yang diseret langsung di-load ke VRAM GPU sebagai texture ID.
+3. **SAF Directory & File Importer:**
+   - Memanggil ContentResolver Android untuk membuka dialog file picker native saat tombol open/import diklik.
+4. **Icon DevCraft:** Mengganti ikon lama (sebelumnya ikon Word) dengan ikon resmi FigCraft DevCraft.
+
+### C. LightCraft v0.20.1 (`com.artcraft.lightcraft`)
+1. **Arsitektur Rust Native ARM64:**
+   - Dibangun murni menggunakan Rust + egui untuk duplikasi editing foto ala Lightroom di Android tablet.
+2. **Native Drag and Drop Image:**
+   - Mendukung drag & drop langsung file foto mentah (RAW / JPEG) ke area viewport kanvas.
+3. **SAF Storage Access:**
+   - Membuka direktori folder galeri tablet langsung via Storage Access Framework Android.
+4. **Icon DevCraft:** Mengganti ikon lama dengan ikon resmi LightCraft DevCraft.
+
+---
+
+## 8. Daftar File Project, Skrip Shell & Struktur Direktori
+
+### Root Project: `/mnt/HDD-2/BACKUP LINUX/FILE DATA/REDMI PAD SE BOOST/`
+```
+├── AGENTS.md                                # Master Architecture & System Guide untuk AI Agent
+├── README.md                                # Dokumentasi publik repo GitHub
+├── CATATAN_OPREKAN_MASTER.md                # Dokumen master rekap ini
+├── app/                                     # Source code Kotlin Android Studio TurboBooster
+│   ├── build.gradle.kts                     # versionCode 9, versionName 1.3.5
+│   └── src/main/
+│       ├── AndroidManifest.xml              # Shizuku provider, permissions, services
+│       ├── assets/
+│       │   ├── audio/kuntilanak_seram.mp3   # Audio test quad speaker
+│       │   └── scripts/                     # 12 skrip shell yang diekstrak ke tablet
+│       └── java/com/arya/turbobooster/
+│           ├── MainActivity.kt              # Dashboard status & telemetri
+│           ├── AudioPlayerService.kt        # Background service audio feedback
+│           └── booster/
+│               ├── AudioBoosterManager.kt   # Dolby & Harman sound tuning
+│               ├── DeviceMetrics.kt         # Sensor CPU, RAM, Suhu, 90Hz
+│               ├── ScriptInstaller.kt       # Ekstraktor skrip shell ke /sdcard/
+│               ├── ShellExecutor.kt         # Shizuku IPC executor
+│               └── TurboBoosterManager.kt   # 21 langkah aktivasi Super Performance
+├── release/
+│   └── TurboBooster.apk                     # Binary release APK ter-compile (5.2 MB)
+├── boost_100_celah_master.sh                # Skrip 100 exploit celah sistem lengkap
+├── boost_pure_zram_compaction.sh            # Skrip pembersihan swap eMMC & zRAM murni
+├── set_zram_8gb.sh                          # Skrip injeksi MQSAS zRAM 8GB
+├── fix_swipe_home_delay.sh                  # Skrip 0ms gesture swipe & density 205
+├── boost_flagship_unfcker.sh                # Skrip spoofing Tier-3 Flagship
+├── boost_oppo_a60_master.sh                 # Profil Snapdragon 680 (CPH2631)
+├── boost_redmi_note_10_pro.sh               # Profil Snapdragon 732G (sweet)
+└── stress_test_5min.py                      # Skrip pengujian kestabilan 5 menit via ADB
+```
+
+---
+
+## 9. Alur Build, Compile & Deployment ADB untuk Agent Masa Depan
+
+Bagi Agent Antigravity / AI berikutnya yang melanjutkan project ini, ikuti alur SOP di bawah ini:
+
+### 1. Menghubungkan Tablet via Wi-Fi ADB
+HyperOS 2.0 merotasi port wireless debugging saat Wi-Fi reconnect atau tablet standby.
+```bash
+# Cek port aktif via mDNS:
+adb mdns services
+
+# Hubungkan (sesuaikan IP dan port yang didapat dari mDNS atau menu Developer Options):
+adb connect 192.168.1.33:40337
+
+# Pastikan status 'device':
+adb devices
+```
+
+### 2. Melakukan Perubahan Kode & Bump Versi
+Buka file `app/build.gradle.kts`:
+- Setiap kali ada update fungsionalitas, **WAJIB BUMP `versionCode`** (misal dari 9 ke 10) agar Android Package Manager mengizinkan in-place update tanpa uninstall.
+- Sesuaikan `versionName` (misal `"1.3.6"`).
+
+### 3. Mengompilasi Release APK
+Jalankan di direktori root project:
+```bash
+cd "/mnt/HDD-2/BACKUP LINUX/FILE DATA/REDMI PAD SE BOOST"
+./gradlew assembleRelease
+cp app/build/outputs/apk/release/app-release-unsigned.apk release/TurboBooster.apk
+# atau gunakan APK rilis yang sudah ter-sign
+```
+
+### 4. Deploy & Install ke Tablet
+```bash
+adb -s 192.168.1.33:40337 install -r "release/TurboBooster.apk"
+
+# Verifikasi versi yang ter-install di tablet:
+adb -s 192.168.1.33:40337 shell "dumpsys package com.arya.turbobooster | grep -E 'versionCode|versionName'"
+
+# Jalankan aplikasi langsung di layar tablet:
+adb -s 192.168.1.33:40337 shell "monkey -p com.arya.turbobooster -c android.intent.category.LAUNCHER 1"
+```
+
+### 5. Commit & Push ke GitHub
+```bash
+cd "/mnt/HDD-2/BACKUP LINUX/FILE DATA/REDMI PAD SE BOOST"
+git add .
+git commit -m "feat: <deskripsi update>"
+git push origin main
+```
+
+---
+*Catatan ini dibuat secara otomatis dan komprehensif sebagai single source of truth untuk seluruh sesi pengerjaan Redmi Pad SE & Android Craft Suite.*
