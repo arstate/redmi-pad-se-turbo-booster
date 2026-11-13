@@ -60,6 +60,15 @@ object ShellExecutor {
         }
     }
 
+    fun newProcess(cmd: Array<String>, env: Array<String>? = null, dir: String? = null): Process? {
+        return try {
+            newProcessMethod?.invoke(null, cmd, env, dir) as? Process
+        } catch (t: Throwable) {
+            Log.e(TAG, "Error invoking Shizuku newProcess: ${t.message}", t)
+            null
+        }
+    }
+
     suspend fun execute(command: String, requirePrivileged: Boolean = true): CommandResult = withContext(Dispatchers.IO) {
         if (isShizukuAvailable() && hasShizukuPermission() && newProcessMethod != null) {
             executeViaShizuku(command)

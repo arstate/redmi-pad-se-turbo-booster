@@ -30,11 +30,10 @@ $ADB settings put global hide_gesture_line 1
 # 0 = Santai, 1 = Seimbang, 2 = Cepat / Elegan
 $ADB settings put system miui_home_animation_rate 2
 
-# 4. SET DURASI ANIMASI WINDOW & TRANSISI KE INSTAN (0.0x / INSTANT)
-# Menghilangkan kalkulasi render scaling window di GPU Adreno 610, buka/tutup app jadi instan 0ms!
-$ADB settings put global window_animation_scale 0.0
-$ADB settings put global transition_animation_scale 0.0
-$ADB settings put global animator_duration_scale 0.0
+# 4. SET DURASI ANIMASI WINDOW & TRANSISI (0.25x ULTRA SNAPPY & CRASH-SAFE)
+$ADB settings put global window_animation_scale 0.25
+$ADB settings put global transition_animation_scale 0.25
+$ADB settings put global animator_duration_scale 0.25
 
 # 5. POTONG DELAY HOLD & TOUCH LATENCY HINGGA SETENGAHNYA
 $ADB settings put secure long_press_timeout 200

@@ -5,13 +5,15 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
+import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.arya.turbobooster.booster.AudioBoosterManager
+import com.arya.turbobooster.booster.BoosterProfile
+import com.arya.turbobooster.booster.DaemonController
 import com.arya.turbobooster.booster.DeviceMetrics
 import com.arya.turbobooster.booster.LogEntry
 import com.arya.turbobooster.booster.ScriptInstaller
@@ -38,6 +40,9 @@ class MainActivity : AppCompatActivity() {
             if (grantResult == PackageManager.PERMISSION_GRANTED) {
                 appendLog("Shizuku permission granted by user!")
                 Toast.makeText(this, "Shizuku Authorized!", Toast.LENGTH_SHORT).show()
+                lifecycleScope.launch {
+                    DaemonController.ensureDaemonRunning(this@MainActivity)
+                }
             } else {
                 appendLog("Shizuku permission was denied.")
             }
@@ -48,6 +53,9 @@ class MainActivity : AppCompatActivity() {
         runOnUiThread {
             updateShizukuBadge()
             appendLog("Shizuku binder received and connected.")
+            lifecycleScope.launch {
+                DaemonController.ensureDaemonRunning(this@MainActivity)
+            }
         }
     }
 
@@ -66,13 +74,19 @@ class MainActivity : AppCompatActivity() {
         setupShizukuListeners()
         setupUI()
         startTelemetryLoop()
+
+        lifecycleScope.launch {
+            if (ShellExecutor.isShizukuAvailable() && ShellExecutor.hasShizukuPermission()) {
+                DaemonController.ensureDaemonRunning(this@MainActivity)
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
         updateShizukuBadge()
         checkAutoRequestShizuku()
-        updateModeUI(TurboBoosterManager.isTurboActive(this))
+        updateProfileUI(TurboBoosterManager.getActiveProfile(this))
     }
 
     override fun onDestroy() {
@@ -108,11 +122,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupUI() {
         val devName = "${android.os.Build.MANUFACTURER.replaceFirstChar { it.uppercase() }} ${android.os.Build.MODEL}"
-        binding.tvDeviceModelSubtitle.text = "$devName • Snapdragon 680 • 90Hz"
+        binding.tvDeviceModelSubtitle.text = "$devName • Snapdragon 680 • 90Hz Native"
 
-        val isTurbo = TurboBoosterManager.isTurboActive(this)
-        binding.switchTurboMode.isChecked = isTurbo
-        updateModeUI(isTurbo)
+        val currentProfile = TurboBoosterManager.getActiveProfile(this)
+        updateProfileUI(currentProfile)
 
         binding.switchAutoBoot.isChecked = TurboBoosterManager.isAutoBootEnabled(this)
         binding.switchAutoBoot.setOnCheckedChangeListener { _, isChecked ->
@@ -120,26 +133,84 @@ class MainActivity : AppCompatActivity() {
             appendLog("Auto-Apply on Boot: $isChecked")
         }
 
+        binding.switchTurboMode.isChecked = TurboBoosterManager.isTurboActive(this)
         binding.switchTurboMode.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked != TurboBoosterManager.isTurboActive(this)) {
-                if (isChecked) applyTurbo() else resetStock()
+            if (isChecked && TurboBoosterManager.getActiveProfile(this) == BoosterProfile.STOCK) {
+                applyProfile(BoosterProfile.FLAGSHIP_BALANCED)
+            } else if (!isChecked && TurboBoosterManager.getActiveProfile(this) != BoosterProfile.STOCK) {
+                applyProfile(BoosterProfile.STOCK)
             }
         }
 
-        binding.btnForceApply.setOnClickListener { applyTurbo() }
-        binding.btnRestoreStock.setOnClickListener { resetStock() }
+        binding.btnForceApply.setOnClickListener {
+            applyProfile(BoosterProfile.FLAGSHIP_BALANCED)
+        }
+
+        binding.btnRestoreStock.setOnClickListener {
+            applyProfile(BoosterProfile.STOCK)
+        }
+
+        // Profile switcher buttons
+        binding.btnProfileStock.setOnClickListener {
+            applyProfile(BoosterProfile.STOCK)
+        }
+
+        binding.btnProfileFlagship.setOnClickListener {
+            applyProfile(BoosterProfile.FLAGSHIP_BALANCED)
+        }
+
+        binding.btnProfileExtreme.setOnClickListener {
+            confirmExtremeGamingMode()
+        }
+
+        // Native Daemon Reclaim & Debloat actions
+        binding.btnReclaimRam.setOnClickListener {
+            if (!checkPrivilegeOrPrompt()) return@setOnClickListener
+            lifecycleScope.launch {
+                appendLog("--- Invoking Native In-RAM Compaction ---")
+                val ok = DaemonController.triggerReclaim(this@MainActivity)
+                appendLog("In-RAM Compaction via Daemon: ${if (ok) "SUCCESS" else "DIRECT FALLBACK"}")
+                if (!ok) {
+                    ShellExecutor.execute("cmd activity compact system", requirePrivileged = true)
+                    ShellExecutor.execute("sm fstrim", requirePrivileged = true)
+                }
+                Toast.makeText(this@MainActivity, "🧹 In-RAM Compaction Complete!", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        binding.btnDebloatAction.setOnClickListener {
+            confirmDebloatAction()
+        }
+
+        binding.btnRestoreDebloatAction.setOnClickListener {
+            if (!checkPrivilegeOrPrompt()) return@setOnClickListener
+            lifecycleScope.launch {
+                appendLog("--- Restoring All Debloated Packages ---")
+                TurboBoosterManager.restoreDebloatedPackages(this@MainActivity) { entry ->
+                    runOnUiThread { appendCommandEntry(entry) }
+                }
+                Toast.makeText(this@MainActivity, "🔄 Debloated Packages Restored!", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        binding.btnProtectedApps.setOnClickListener {
+            showProtectedAppsDialog()
+        }
 
         binding.btnDownscaleGames.setOnClickListener {
             if (!checkPrivilegeOrPrompt()) return@setOnClickListener
             lifecycleScope.launch {
-                appendLog("--- Applying 0.7x Game Downscaling ---")
+                appendLog("--- Applying 0.8x Native Game Downscaling ---")
                 for ((pkg, name) in TurboBoosterManager.TARGET_GAMES) {
-                    val r1 = ShellExecutor.execute("cmd game set --downscale 0.7 $pkg", requirePrivileged = true)
-                    val r2 = ShellExecutor.execute("cmd miui.downscale add-debug-app $pkg 0.7", requirePrivileged = true)
+                    if (pkg == "com.lemon.lvoverseas" || pkg == "com.lemon.ccpadpro" || pkg == "com.mobile.legends") {
+                        continue // Prevent EGL crash on video editor & MLBB Unity engine
+                    }
+                    val r1 = ShellExecutor.execute("cmd game set --downscale 0.8 $pkg", requirePrivileged = true)
+                    val r2 = ShellExecutor.execute("cmd miui.downscale add-debug-app $pkg 0.8", requirePrivileged = true)
                     appendLog("[$name] AOSP: ${r1.isSuccess}, HyperOS: ${r2.isSuccess}")
                 }
                 appendLog("--- Game downscaling complete ---")
-                Toast.makeText(this@MainActivity, "0.7x Games Applied!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, "0.8x Games Applied!", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -180,6 +251,135 @@ class MainActivity : AppCompatActivity() {
         setupAudioUI()
     }
 
+    private fun confirmExtremeGamingMode() {
+        AlertDialog.Builder(this)
+            .setTitle("⚠️ Warning: Extreme Gaming & Render Mode")
+            .setMessage("This mode unlocks Thermal Sensor Override 0 (no thermal downclocking) and 0.25x instant animations. Ensure tablet has adequate ventilation.\n\nContinue?")
+            .setPositiveButton("Engage Extreme Mode") { _, _ ->
+                applyProfile(BoosterProfile.EXTREME_GAMING_RENDER)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun confirmDebloatAction() {
+        AlertDialog.Builder(this)
+            .setTitle("🧹 Surgical Debloat (-800 Crash-Purge)")
+            .setMessage("This will uninstall 30+ bloatware packages (Google Telemetry, Xiaomi MSA, Weather, Analytics) and immediately kill their undead -800 persistent background processes from RAM without rebooting.\n\nCore system framework packages are protected by the Hardcoded Red-List.\n\nProceed?")
+            .setPositiveButton("Debloat Now") { _, _ ->
+                if (!checkPrivilegeOrPrompt()) return@setPositiveButton
+                lifecycleScope.launch {
+                    TurboBoosterManager.executeDebloat(this@MainActivity) { entry ->
+                        runOnUiThread { appendCommandEntry(entry) }
+                    }
+                    Toast.makeText(this@MainActivity, "Debloat Complete! Massive RAM freed.", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showProtectedAppsDialog() {
+        val currentProtected = TurboBoosterManager.getProtectedApps(this).toMutableList()
+        val appArray = currentProtected.toTypedArray()
+
+        AlertDialog.Builder(this)
+            .setTitle("🛡️ Protected Apps (Exempt from Caging)")
+            .setItems(appArray) { _, which ->
+                val selected = appArray[which]
+                AlertDialog.Builder(this)
+                    .setTitle("Remove Protected App")
+                    .setMessage("Remove $selected from protected list? It will be subject to background caging.")
+                    .setPositiveButton("Remove") { _, _ ->
+                        TurboBoosterManager.removeProtectedApp(this, selected)
+                        lifecycleScope.launch {
+                            DaemonController.removeProtectedApp(selected, this@MainActivity)
+                        }
+                        Toast.makeText(this, "Removed $selected", Toast.LENGTH_SHORT).show()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+            .setPositiveButton("Add App") { _, _ ->
+                val input = EditText(this)
+                input.hint = "com.example.app"
+                AlertDialog.Builder(this)
+                    .setTitle("Add Protected Package")
+                    .setView(input)
+                    .setPositiveButton("Add") { _, _ ->
+                        val pkg = input.text.toString().trim()
+                        if (pkg.isNotEmpty()) {
+                            TurboBoosterManager.addProtectedApp(this, pkg)
+                            lifecycleScope.launch {
+                                DaemonController.addProtectedApp(pkg, this@MainActivity)
+                            }
+                            Toast.makeText(this, "Protected $pkg", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
+    private fun applyProfile(profile: BoosterProfile) {
+        if (!checkPrivilegeOrPrompt()) return
+
+        lifecycleScope.launch {
+            binding.switchTurboMode.isEnabled = false
+            binding.btnForceApply.isEnabled = false
+            binding.btnRestoreStock.isEnabled = false
+            appendLog(">>> SWITCHING TO PROFILE: ${profile.name} <<<")
+
+            val ok = TurboBoosterManager.applyProfile(this@MainActivity, profile) { entry ->
+                runOnUiThread { appendCommandEntry(entry) }
+            }
+
+            updateProfileUI(profile)
+            binding.switchTurboMode.isEnabled = true
+            binding.btnForceApply.isEnabled = true
+            binding.btnRestoreStock.isEnabled = true
+
+            if (ok) {
+                appendLog(">>> PROFILE ${profile.name} APPLIED SUCCESSFULLY <<<")
+                Toast.makeText(this@MainActivity, "⚡ Profile: ${profile.name} Active", Toast.LENGTH_SHORT).show()
+            } else {
+                appendLog(">>> Warning: Some steps encountered errors. Check log.")
+            }
+        }
+    }
+
+    private fun updateProfileUI(profile: BoosterProfile) {
+        val isTurbo = (profile != BoosterProfile.STOCK)
+        binding.switchTurboMode.isChecked = isTurbo
+
+        when (profile) {
+            BoosterProfile.STOCK -> {
+                binding.tvModeSubtitle.text = "Stock Balanced Mode • Normal Frequencies"
+                binding.tvModeSubtitle.setTextColor(getColor(R.color.md_theme_dark_onSurfaceVariant))
+                binding.tvThermalState.text = "Dynamic (Stock)"
+                binding.tvThermalState.setTextColor(getColor(R.color.md_theme_dark_onSurfaceVariant))
+            }
+            BoosterProfile.FLAGSHIP_BALANCED -> {
+                binding.tvModeSubtitle.text = "FLAGSHIP BALANCED • 2.4GHz Burst • 90Hz • 205 DPI"
+                binding.tvModeSubtitle.setTextColor(getColor(R.color.md_theme_dark_primary))
+                binding.tvThermalState.text = "Balanced (Safe)"
+                binding.tvThermalState.setTextColor(getColor(R.color.accent_green))
+            }
+            BoosterProfile.EXTREME_GAMING_RENDER -> {
+                binding.tvModeSubtitle.text = "EXTREME GAMING • Thermal Override 0 • 0.25x Instant"
+                binding.tvModeSubtitle.setTextColor(getColor(R.color.accent_gold))
+                binding.tvThermalState.text = "OVERRIDDEN (Cool/0)"
+                binding.tvThermalState.setTextColor(getColor(R.color.accent_gold))
+            }
+            BoosterProfile.DEBLOAT_RESTORE -> {
+                binding.tvModeSubtitle.text = "Debloat Active • Undead Daemons Purged"
+                binding.tvModeSubtitle.setTextColor(getColor(R.color.accent_green))
+            }
+        }
+    }
+
     private fun showBundledScriptsDialog() {
         val scripts = arrayOf(
             "🚀 boost_flagship_unfcker.sh (HyperOS Flagship Unfcker)",
@@ -188,7 +388,6 @@ class MainActivity : AppCompatActivity() {
             "boost_extreme.sh (Extreme Gaming & CPU)",
             "boost_deep_system.sh (Deep Kernel & RAM)",
             "boost_pure_zram_compaction.sh (Pure In-RAM zRAM Compaction)",
-            "set_zram_8gb.sh (Injeksi zRAM 8GB Expansion)",
             "fix_swipe_home_delay.sh (Zero-Delay Navigation & Swipe)",
             "boost_chrome_webview.sh (Chrome & WebView)",
             "boost_quad_audio.sh (Quad Speaker Studio)",
@@ -214,13 +413,12 @@ class MainActivity : AppCompatActivity() {
                     3 -> runSelectedScript("boost_extreme.sh")
                     4 -> runSelectedScript("boost_deep_system.sh")
                     5 -> runSelectedScript("boost_pure_zram_compaction.sh")
-                    6 -> runSelectedScript("set_zram_8gb.sh")
-                    7 -> runSelectedScript("fix_swipe_home_delay.sh")
-                    8 -> runSelectedScript("boost_chrome_webview.sh")
-                    9 -> runSelectedScript("boost_quad_audio.sh")
-                    10 -> runSelectedScript("pubg_ultimate_booster.sh")
-                    11 -> runSelectedScript("launch_freeform.sh")
-                    12 -> {
+                    6 -> runSelectedScript("fix_swipe_home_delay.sh")
+                    7 -> runSelectedScript("boost_chrome_webview.sh")
+                    8 -> runSelectedScript("boost_quad_audio.sh")
+                    9 -> runSelectedScript("pubg_ultimate_booster.sh")
+                    10 -> runSelectedScript("launch_freeform.sh")
+                    11 -> {
                         if (!checkPrivilegeOrPrompt()) return@setItems
                         lifecycleScope.launch {
                             appendLog("--- Applying Native Tablet Mode (1200x1920 @ 205dpi) ---")
@@ -230,7 +428,7 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this@MainActivity, "Native Tablet Mode (205dpi) Applied!", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    13 -> {
+                    12 -> {
                         if (!checkPrivilegeOrPrompt()) return@setItems
                         lifecycleScope.launch {
                             appendLog("--- Applying Full Screen Gesture Navigation (FSG + Hide Line) ---")
@@ -242,7 +440,7 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this@MainActivity, "Zero-Delay Gesture Nav Applied!", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    14 -> {
+                    13 -> {
                         if (!checkPrivilegeOrPrompt()) return@setItems
                         lifecycleScope.launch {
                             appendLog("--- Fixing CapCut EGL Surface & Granting Media AppOps ---")
@@ -266,7 +464,7 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this@MainActivity, "CapCut EGL & Storage Permissions Fixed!", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    15 -> {
+                    14 -> {
                         if (!checkPrivilegeOrPrompt()) return@setItems
                         lifecycleScope.launch {
                             appendLog("--- Applying 75% Display Scale (900x1440 @ 154dpi) ---")
@@ -276,7 +474,7 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this@MainActivity, "Display 75% Scale Applied!", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    16 -> {
+                    15 -> {
                         if (!checkPrivilegeOrPrompt()) return@setItems
                         lifecycleScope.launch {
                             appendLog("--- Resetting Display to Native (1200x1920 @ 280dpi) ---")
@@ -286,47 +484,19 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this@MainActivity, "Display Reset to Native!", Toast.LENGTH_SHORT).show()
                         }
                     }
+                    16 -> {
+                        confirmDebloatAction()
+                    }
                     17 -> {
                         if (!checkPrivilegeOrPrompt()) return@setItems
                         lifecycleScope.launch {
-                            appendLog("--- Debloating Background Leeches ---")
-                            val pkgs = listOf(
-                                "com.google.android.apps.messaging",
-                                "com.milink.service",
-                                "com.xiaomi.aicr",
-                                "com.miui.aod",
-                                "com.android.updater",
-                                "com.google.android.as"
-                            )
-                            for (p in pkgs) {
-                                val res = ShellExecutor.execute("pm uninstall -k --user 0 $p", requirePrivileged = true)
-                                ShellExecutor.execute("cmd appops set $p RUN_IN_BACKGROUND ignore", requirePrivileged = true)
-                                ShellExecutor.execute("am force-stop $p", requirePrivileged = true)
-                                appendLog("Debloat $p: ${res.isSuccess}")
-                            }
-                            Toast.makeText(this@MainActivity, "Debloat complete! Massive RAM freed.", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                    18 -> {
-                        if (!checkPrivilegeOrPrompt()) return@setItems
-                        lifecycleScope.launch {
-                            appendLog("--- Restoring Debloated Packages ---")
-                            val pkgs = listOf(
-                                "com.google.android.apps.messaging",
-                                "com.milink.service",
-                                "com.xiaomi.aicr",
-                                "com.miui.aod",
-                                "com.android.updater",
-                                "com.google.android.as"
-                            )
-                            for (p in pkgs) {
-                                val res = ShellExecutor.execute("cmd package install-existing $p", requirePrivileged = true)
-                                appendLog("Restore $p: ${res.isSuccess}")
+                            TurboBoosterManager.restoreDebloatedPackages(this@MainActivity) { entry ->
+                                runOnUiThread { appendCommandEntry(entry) }
                             }
                             Toast.makeText(this@MainActivity, "Packages restored!", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    19 -> {
+                    18 -> {
                         lifecycleScope.launch {
                             val list = ScriptInstaller.extractAllScripts(this@MainActivity)
                             appendLog("Extracted ${list.size} scripts to internal & /sdcard/TurboBoosterScripts/")
@@ -528,86 +698,6 @@ sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh
         }
     }
 
-    private fun updateModeUI(isTurbo: Boolean) {
-        if (isTurbo) {
-            binding.tvModeSubtitle.text = "ACTIVE • 2.4GHz Locked • Thermal Override 0 • 90Hz"
-            binding.tvModeSubtitle.setTextColor(getColor(R.color.md_theme_dark_primary))
-            binding.tvThermalState.text = "OVERRIDDEN (Cool/0)"
-            binding.tvThermalState.setTextColor(getColor(R.color.accent_green))
-        } else {
-            binding.tvModeSubtitle.text = "Stock Balanced Mode • Normal Frequencies"
-            binding.tvModeSubtitle.setTextColor(getColor(R.color.md_theme_dark_onSurfaceVariant))
-            binding.tvThermalState.text = "Dynamic (Stock)"
-            binding.tvThermalState.setTextColor(getColor(R.color.md_theme_dark_onSurfaceVariant))
-        }
-    }
-
-    private fun applyTurbo() {
-        if (!ShellExecutor.isShizukuAvailable() || !ShellExecutor.hasShizukuPermission()) {
-            binding.switchTurboMode.isChecked = false
-            updateModeUI(false)
-            showWirelessAdbGuide()
-            return
-        }
-
-        lifecycleScope.launch {
-            binding.switchTurboMode.isEnabled = false
-            binding.btnForceApply.isEnabled = false
-            appendLog(">>> ENABLING SUPER PERFORMANCE MODE <<<")
-
-            val ok = TurboBoosterManager.applySuperPerformanceMode(this@MainActivity) { entry ->
-                runOnUiThread {
-                    appendCommandEntry(entry)
-                }
-            }
-
-            binding.switchTurboMode.isChecked = ok
-            updateModeUI(ok)
-            binding.switchTurboMode.isEnabled = true
-            binding.btnForceApply.isEnabled = true
-
-            if (ok) {
-                appendLog(">>> TURBO MODE ACTIVATED SUCCESSFULLY <<<")
-                Toast.makeText(this@MainActivity, "⚡ Turbo Mode Activated!", Toast.LENGTH_SHORT).show()
-            } else {
-                appendLog(">>> Warning: Some commands returned errors. Check log above.")
-                Toast.makeText(this@MainActivity, "⚠️ Some commands failed. Check log.", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    private fun resetStock() {
-        if (!ShellExecutor.isShizukuAvailable() || !ShellExecutor.hasShizukuPermission()) {
-            binding.switchTurboMode.isChecked = TurboBoosterManager.isTurboActive(this)
-            showWirelessAdbGuide()
-            return
-        }
-
-        lifecycleScope.launch {
-            binding.switchTurboMode.isEnabled = false
-            binding.btnRestoreStock.isEnabled = false
-            appendLog(">>> RESTORING STOCK BALANCED MODE <<<")
-
-            val ok = TurboBoosterManager.applyStockMode(this@MainActivity) { entry ->
-                runOnUiThread {
-                    appendCommandEntry(entry)
-                }
-            }
-
-            binding.switchTurboMode.isChecked = !ok
-            updateModeUI(!ok)
-            binding.switchTurboMode.isEnabled = true
-            binding.btnRestoreStock.isEnabled = true
-
-            if (ok) {
-                appendLog(">>> STOCK MODE RESTORED SUCCESSFULLY <<<")
-                Toast.makeText(this@MainActivity, "↺ Stock Mode Restored", Toast.LENGTH_SHORT).show()
-            } else {
-                appendLog(">>> Warning: Reset encountered errors.")
-            }
-        }
-    }
-
     private fun appendCommandEntry(entry: LogEntry) {
         val prefix = if (entry.isSuccess) "[✓]" else "[✗]"
         val line = "$prefix ${entry.timestamp} ${entry.command}\n    └─ ${entry.output}\n"
@@ -624,14 +714,27 @@ sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh
     private fun startTelemetryLoop() {
         telemetryJob = lifecycleScope.launch(Dispatchers.IO) {
             while (isActive) {
-                val isTurbo = TurboBoosterManager.isTurboActive(this@MainActivity)
+                val currentProfile = TurboBoosterManager.getActiveProfile(this@MainActivity)
+                val isTurbo = (currentProfile != BoosterProfile.STOCK)
                 val metrics = DeviceMetrics.fetchLiveMetrics(this@MainActivity, isTurbo)
+
+                val daemonStatusStr = try {
+                    DaemonController.getDaemonStatus(this@MainActivity)
+                } catch (_: Throwable) { null }
 
                 withContext(Dispatchers.Main) {
                     binding.tvCpuGold.text = if (metrics.goldCpuMhz > 0) "${metrics.goldCpuMhz} MHz" else "-- MHz"
                     binding.tvCpuSilver.text = if (metrics.silverCpuMhz > 0) "${metrics.silverCpuMhz} MHz" else "-- MHz"
                     binding.tvThermalState.text = metrics.thermalStatus
                     binding.tvRefreshRate.text = "${metrics.refreshRateHz.toInt()} Hz"
+
+                    if (daemonStatusStr != null) {
+                        binding.tvDaemonStatus.text = "⚡ ACTIVE: $daemonStatusStr"
+                        binding.tvDaemonStatus.setTextColor(getColor(R.color.accent_green))
+                    } else {
+                        binding.tvDaemonStatus.text = "Offline • Tap Apply Turbo or Start Shizuku"
+                        binding.tvDaemonStatus.setTextColor(getColor(R.color.md_theme_dark_onSurfaceVariant))
+                    }
                 }
 
                 delay(2000)

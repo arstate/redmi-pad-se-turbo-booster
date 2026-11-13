@@ -1,19 +1,16 @@
 #!/system/bin/sh
 # REDMI PAD SE EXTREME PERFORMANCE (HYPEROS / NON-ROOT ADB)
 
-echo '[1/7] Mengunci CPU Clock & Bypass Thermal Throttling...'
-cmd power set-fixed-performance-mode-enabled true
-cmd thermalservice override-status 0
+echo '[1/7] Optimasi Frekuensi & Responsivitas Snapdragon 680...'
+cmd power set-adaptive-power-saver-enabled false
 
-echo '[2/7] SQLite In-RAM Caching (Bypass Bottleneck eMMC 5.1 Fsync)...'
-setprop debug.sqlite.syncmode OFF
-setprop debug.sqlite.wal.syncmode OFF
-setprop debug.sqlite.journalmode MEMORY
+echo '[2/7] SQLite WAL Engine & Safe Journaling...'
+setprop debug.sqlite.journalmode WAL
+setprop debug.sqlite.wal.syncmode NORMAL
 setprop debug.sqlite.wal.autocheckpoint 4000
 setprop debug.sqlite.wal.poolsize 8
 setprop debug.sqlite.wal.truncatesize 1048576
 setprop debug.sqlite.idle_connection_timeout 120000
-settings put global sqlite_compatibility_wal_flags 'compatibility_wal_supported=true,wal_syncmode=OFF'
 
 echo '[3/7] F2FS Controller Maintenance & Storage TRIM...'
 cmd device_config put storage_native_boot smart_idle_maint_enabled true

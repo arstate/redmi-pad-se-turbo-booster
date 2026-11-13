@@ -14,7 +14,7 @@ The **Redmi Pad SE Turbo Booster** is a rootless system tuning engine and standa
 
 ### The Bottlenecks & Exploits Solved
 1. **Slow eMMC 5.1 Storage Bottleneck**: eMMC 5.1 random write speeds hover around 20–30 MB/s. HyperOS's default "Memory Extension" (virtual RAM swap file written to flash storage) creates catastrophic UI micro-stutters and freeze frames. We disable flash swap entirely and reroute memory compaction directly into physical LPDDR4X zRAM (17 GB/s bandwidth).
-2. **HyperOS Tier-1 Budget Throttling**: HyperOS internally classifies Redmi Pad SE as a budget device (`deviceLevelList "v:1,c:1,g:1"`), aggressively capping background processes, locking SurfaceFlinger frame pacing, and degrading UI transitions. We spoof Tier-3 Flagship status (`v:1,c:3,g:3` or `v:1,c:3,g:1,m:2`) and elevate CPU/GPU computility levels to Level 6 using the internal Xiaomi MQSAS backdoor.
+2. **HyperOS Tier-1 Budget Throttling**: HyperOS internally classifies Redmi Pad SE as a budget device (`deviceLevelList "v:1,c:1,g:1"`), aggressively capping background processes, locking SurfaceFlinger frame pacing, and degrading UI transitions. In Brief v2.0, we spoof Tier-3 Flagship status with `deviceLevelList "v:1,c:3,g:1,m:2"` (elevates animation and CPU computility without GPU blur choke) and bind SurfaceFlinger/animator to Gold cores (4-7) using MQSAS Call 21.
 3. **GPU Gaussian Blur Overhead**: Adreno 610 struggles with multi-layer window blurs on a 1200x1920 canvas. We disable window, desktop, dock, and notification blurs, reclaiming ~100% shader fillrate during gesture navigation.
 4. **Gesture Navigation Lag**: The home gesture line incurs a 150–200ms discrimination buffer to distinguish horizontal multitasking swipes from vertical return swipes. Hiding the gesture line and reducing touch timeouts achieves true instant (0ms) swipe-to-home responsiveness.
 5. **CapCut & Video Editor Resizing Crash**: Custom window downscaling engines crash EGL contexts in video editing apps (CapCut). We enforce native resolution exemption for video editing and grant full storage AppOps.
@@ -105,27 +105,27 @@ The repository contains standalone shell scripts engineered for direct execution
 
 | Script | Primary Responsibility | Key Mechanism |
 |---|---|---|
-| `boost_100_celah_master.sh` | 100 deep system tweaks across 10 categories | SurfaceFlinger, HWUI SkiaGL threaded, ADPF, ART compilation, SQLite RAM journaling |
+| `boost_100_celah_master.sh` | 100 deep system tweaks across 10 categories | SurfaceFlinger, HWUI SkiaGL threaded, ADPF, ART compilation, SQLite WAL/NORMAL |
 | `boost_pure_zram_compaction.sh` | Pure in-RAM zRAM compaction engine | Disables eMMC swap, sets Android 15 `CachedAppOptimizer` throttle to 5000ms |
-| `fix_swipe_home_delay.sh` | Zero-delay swipe home & app opening | `hide_gesture_line 1`, `animation_scale 0.0`, `touch_response_speed 1` |
-| `set_zram_8gb.sh` | zRAM 8GB memory expansion profile | MQSAS backdoor Call 21 injects `persist.sys.zram_size 8192` & `persist.miui.extm.bdsize 8192` |
-| `boost_flagship_unfcker.sh` | Tier-3 Flagship spoofing & MQSAS boost | `deviceLevelList "v:1,c:3,g:3"`, MQSAS computility 6, disables desktop/dock blurs |
+| `fix_swipe_home_delay.sh` | Zero-delay swipe home & app opening | `hide_gesture_line 1`, `animation_scale 0.25`, `touch_response_speed 1` |
+| `set_zram_8gb.sh` | eMMC virtual swap decommissioning | Enforces `persist.miui.extm.enable 0` and redirects to pure zRAM |
+| `boost_flagship_unfcker.sh` | Tier-3 Flagship spoofing & MQSAS boost | `deviceLevelList "v:1,c:3,g:1,m:2"`, disables desktop/dock blurs |
 | `boost_oppo_a60_master.sh` | Snapdragon 680 companion profile (CPH2631) | 90Hz lock, Touch sampling tuning, Adreno 610 driver stabilization |
 | `boost_redmi_note_10_pro.sh` | Snapdragon 732G companion profile (sweet) | MIUI 14 thermal bypass, 120Hz lock, Joyose suppression |
 | `stress_test_5min.py` | 5-Minute automated ADB telemetry & stress tester | Evaluates CPU frequency locks, RAM compaction rates, and SurfaceFlinger frame drops |
 
 ### 3.1 Breakdown of the 100 System Tweaks (`boost_100_celah_master.sh`)
 1. **Category 1: SurfaceFlinger & Compositor Pipeline (1–10)**:
-   - `debug.sf.disable_client_composition_cache 1`, `debug.sf.disable_backpressure 1`, `debug.sf.drop_missed_frames 1`.
-   - `vulkan_renderengine true`, `multithreaded_present true`, `fifo_priority_for_major_ui_processes true`.
+   - `debug.sf.disable_client_composition_cache 1`, `debug.sf.drop_missed_frames 1`.
+   - `multithreaded_present true`, `fifo_priority_for_major_ui_processes true`.
 2. **Category 2: HWUI RenderThread & Skia Engine (11–20)**:
    - `debug.hwui.renderer skiagl`, `debug.renderengine.backend skiaglthreaded`.
    - `debug.hwui.use_gpu_pixel_buffers true`, `debug.hwui.target_cpu_time_percent 90`.
-   - `debug.sqlite.wal.syncmode OFF`.
+   - `debug.sqlite.journalmode WAL`, `debug.sqlite.wal.syncmode NORMAL`.
 3. **Category 3: Qualcomm Bengal / Adreno 610 Driver Stabilization (21–30)**:
    - Delete buggy ANGLE driver overrides that cause Mobile Legends / Unity crashes.
-   - SurfaceFlinger buffer latching (`debug.sf.latch_unsignaled 1`, `debug.sf.enable_hwc_vds 1`).
-   - Android Phantom Process Killer bypass (`max_phantom_processes 2147483647`).
+   - SurfaceFlinger buffer optimization (`debug.sf.enable_hwc_vds 1`).
+   - Android Phantom Process Killer bypass (`max_phantom_processes 128` on 4GB).
    - Suppress tracking daemons (`com.miui.analytics`, `com.miui.msa.global`, `com.xiaomi.metok-sdk`, `com.miui.daemon`).
 4. **Category 4: Display Refresh Rate & Panel Governance (31–40)**:
    - Lock permanent 90Hz (`peak_refresh_rate 90.0`, `min_refresh_rate 90.0`, `fps_limit 90`, `thermal_limit_refresh_rate 0`).
@@ -135,7 +135,7 @@ The repository contains standalone shell scripts engineered for direct execution
    - `cmd package compile -m speed -f com.android.systemui` & `com.android.settings`.
    - `reg_alloc_no_output_overlap true`, `compact_object_header true`.
 7. **Category 7: Memory Architecture & LMKD Tuning (61–70)**:
-   - Virtual RAM disabled (`isExternalRamOn 0`, `ram_expand_size 0`).
+   - Virtual RAM disabled (`persist.miui.extm.enable 0`, `isExternalRamOn 0`, `ram_expand_size 0`).
    - `activity_manager use_compaction true`, `compact_proactive true`, `memory-factor set NORMAL`.
 8. **Category 8: Storage I/O & SQLite In-Memory Caching (71–80)**:
    - `sqlite_allow_temp_tables true`, `smart_idle_maint_enabled true`, `fstrim`.
@@ -144,7 +144,7 @@ The repository contains standalone shell scripts engineered for direct execution
    - Force system `high_performance` power mode.
 10. **Category 10: Tablet Touch Digitizer & Power Management (91–100)**:
     - `cmd thermalservice override-status 0` (Bypass thermal downclocking).
-    - `cmd power set-fixed-performance-mode-enabled true` (Lock 2.4GHz / 1.9GHz).
+    - Dynamic CPU governor without fixed-performance mode cap.
     - Radio jitter elimination (`wifi_scan_always_enabled 0`, `ble_scan_always_enabled 0`).
     - Android 15 MGLRU activation (`runtime_native_boot mglru true`).
     - MQSAS Call 21 permanent SurfaceFlinger 90 FPS lock.
@@ -163,7 +163,6 @@ The `app/` directory houses a native Kotlin Android Studio project:
 app/src/main/
 ├── AndroidManifest.xml                  # Permissions, Services, Receivers, Shizuku Provider
 ├── assets/
-│   ├── audio/kuntilanak_seram.mp3       # Audio payload for audio testing service
 │   └── scripts/                         # 12 Bundled performance & gaming shell scripts
 │       ├── boost_100.sh
 │       ├── boost_chrome_webview.sh
@@ -177,67 +176,43 @@ app/src/main/
 │       ├── launch_freeform.sh
 │       ├── pubg_ultimate_booster.sh
 │       └── set_zram_8gb.sh
+├── jniLibs/arm64-v8a/
+│   └── libturbodaemon.so                # Rust Native UID 2000 daemon binary
 └── java/com/arya/turbobooster/
-    ├── AudioPlayerService.kt            # Background service playing audio feedback at max volume (supports embedded asset & custom path)
-    ├── MainActivity.kt                  # Real-time dashboard, Shizuku listener, script & display quick-action dialog
+    ├── MainActivity.kt                  # Real-time dashboard, Shizuku listener, 4 profiles HUD & debloat manager
     ├── booster/
     │   ├── AudioBoosterManager.kt       # Quad-speaker tuning, Dolby Atmos & Harman curve unlock
+    │   ├── DaemonController.kt          # Rust native daemon IPC controller via Abstract Unix Domain Socket
     │   ├── DeviceMetrics.kt             # Real-time CPU, RAM, thermal, and refresh rate reader
     │   ├── ScriptInstaller.kt           # Asset extractor to app private files / /sdcard/TurboBoosterScripts
     │   ├── ShellExecutor.kt             # Shizuku IPC bridge via reflection (Shizuku.newProcess)
-    │   └── TurboBoosterManager.kt       # 21-step Super Performance Mode & Stock Mode orchestrator
+    │   └── TurboBoosterManager.kt       # 4 Profile State Transitions, Red/Green debloat lists, MQSAS Call 21
     └── receiver/
-        ├── BootReceiver.kt              # On boot: auto-activates Turbo Mode; delegates PLAY_AUDIO intent to AudioPlayerService
+        ├── BootReceiver.kt              # On boot: checks Shizuku readiness, notifies user if re-auth is needed
         └── TurboBoosterTileService.kt   # Android Quick Settings Tile for 1-tap Turbo toggle
 ```
 
-### 4.2 Shizuku Provider Integration (`rikka.shizuku.ShizukuProvider`)
-In `AndroidManifest.xml`:
-```xml
-<provider
-    android:name="rikka.shizuku.ShizukuProvider"
-    android:authorities="com.arya.turbobooster.shizuku"
-    android:multiprocess="false"
-    android:enabled="true"
-    android:exported="true"
-    android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
-```
-- The app binds to the Shizuku server binder without requiring root.
-- `ShellExecutor.kt` interacts with `Shizuku.newProcess()` using reflection, providing standard `stdin`, `stdout`, and `stderr` streams under `UID 2000` (shell privileges).
+### 4.2 Rust Native Daemon (`turbodaemon` / `libturbodaemon.so`)
+- Compiled with Rust 1.98.0 / Android NDK 27 (`aarch64-linux-android`) via `build_daemon.sh`.
+- Spawned under `UID 2000` shell privileges by `DaemonController.kt`.
+- Listens on Abstract Unix Domain Socket `@turbodaemon_ipc` (`\0turbodaemon_ipc`).
+- Implements:
+  1. Cryptographic token handshake (`AUTH <token>`).
+  2. Protocol commands: `PING`, `SET_PROFILE <NAME>`, `TRIGGER_RECLAIM`, `GET_STATUS`.
+  3. Continuous 90Hz & `device_config` guard loop.
+  4. Screen-off gentle memory compaction.
+  5. Foreground gaming / CapCut priority isolation (`tare set-vip`, `package suspend`).
 
-### 4.3 Quick Settings Tile (`TurboBoosterTileService`)
-- Declared with `android.permission.BIND_QUICK_SETTINGS_TILE`.
-- When added to the HyperOS Control Center:
-  - Displays state: `Turbo: ON` (Active / Highlighted) or `Turbo: OFF` (Inactive).
-  - Tapping toggles `applySuperPerformanceMode` or `applyStockMode` asynchronously on `Dispatchers.IO`.
+### 4.3 Four Reversible Profiles & Debloat Engine
+1. `STOCK`: Restores factory default settings, refresh rate governance, animation scales (1.0x), and enables GMS telemetry.
+2. `FLAGSHIP_BALANCED`: Injects Tier-3 spoofing (`v:1,c:3,g:1,m:2`), binds SurfaceFlinger to Gold cores (4-7), enables Cgroup v2 freezer, suppresses telemetry.
+3. `EXTREME_GAMING_RENDER`: Enables aggressive touch boost, compiles foreground apps to speed mode, pins launcher/systemui, overrides thermal service (opt-in).
+4. `DEBLOAT_RESTORE`: 1-tap restore of all uninstalled green-list packages via `cmd package install-existing`.
 
-### 4.4 Audio Testing Service (`AudioPlayerService`)
-- Manages audio stream volume elevation (`STREAM_MUSIC` to maximum).
-- Plays embedded asset audio (`audio/kuntilanak_seram.mp3`) with automatic completion cleanup (or accepts optional custom path via `Intent.putExtra("path", ...)`).
-- Can be triggered externally via broadcast:
-  ```bash
-  # Play default embedded asset:
-  adb shell am broadcast -a com.arya.turbobooster.PLAY_AUDIO
+- **Hardcoded Red-List**: Core system packages (`com.miui.securitycenter`, `com.miui.home`, `com.android.systemui`, `com.google.android.gms`, etc.) strictly blocked from any uninstall/disable/crash.
+- **Green-List Surgical Debloat**: Uninstalls bloatware (`pm uninstall -k --user 0 <pkg>`) and immediately reaps undead `-800 PERSISTENT` daemons via `cmd activity crash --user 0 <pkg>`.
 
-  # Or play specific file path:
-  adb shell am broadcast -a com.arya.turbobooster.PLAY_AUDIO --es path "/sdcard/sound.mp3"
-  ```
-
-### 4.5 Release Artifacts
-- Binary output: `app/build/outputs/apk/release/app-release.apk`
-- Tracked git binary: `release/TurboBooster.apk` (Signed with debug signing key for seamless test installs).
-
----
-
-## 5. Master Workflows for Next AI Agents
-
-When instructed to work on this repository, subsequent agents must follow these standardized protocols:
-
-### Workflow 1: Building the Android App
-```bash
-cd "/mnt/HDD-2/BACKUP LINUX/FILE DATA/REDMI PAD SE BOOST"
-
-# 1. Compile and package the release APK
+### 4.4 Shizuku Provider Integration (`rikka.shizuku.ShizukuProvider`)
 ./gradlew assembleRelease
 
 # 2. Sync built APK to the release folder

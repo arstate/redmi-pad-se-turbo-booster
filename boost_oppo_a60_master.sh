@@ -17,7 +17,7 @@ settings put global power_mode high_performance
 settings put system power_mode high_performance
 settings put global high_performance_mode 1
 settings put secure high_performance_mode 1
-cmd power set-fixed-performance-mode-enabled true
+# cmd power set-fixed-performance-mode-enabled removed (caps CPU below peak burst)
 cmd power set-adaptive-power-saver-enabled false
 cmd thermalservice override-status 0
 settings put global power_manager_constants "no_cached_app_scheduling=true"
@@ -45,7 +45,6 @@ setprop debug.hwui.render_thread_priority -20
 setprop debug.hwui.use_hint_manager true
 setprop debug.sf.enable_adpf_cpu_hint 1
 setprop debug.sf.disable_client_composition_cache 1
-setprop debug.sf.disable_backpressure 1
 setprop debug.sf.drop_missed_frames 1
 setprop vendor.perf.framepacing.enable 1
 settings put global disable_window_blurs 1

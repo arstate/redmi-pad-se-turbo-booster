@@ -39,8 +39,6 @@ cmd appops set com.milink.service RUN_ANY_IN_BACKGROUND ignore 2>/dev/null || tr
 # Kategori 2: SurfaceFlinger, VSYNC & Compositor Pipeline (Bebas Stutter)
 # ==============================================================================
 echo "[2/7] Mengonfigurasi SurfaceFlinger Pipeline & Latensi Buffer..."
-setprop debug.sf.latch_unsignaled 1
-setprop debug.sf.disable_backpressure 1
 setprop debug.sf.enable_hwc_vds 1
 setprop debug.sf.predict_hwc_composition_strategy 1
 setprop debug.sf.early_phase_offset_ns 500000
@@ -64,7 +62,8 @@ setprop debug.hwui.skip_empty_damage true
 setprop debug.hwui.fps_divisor 1
 setprop debug.egl.swapinterval 0
 setprop debug.gr.numframebuffers 3
-setprop debug.sqlite.wal.syncmode OFF
+setprop debug.sqlite.journalmode WAL
+setprop debug.sqlite.wal.syncmode NORMAL
 setprop vendor.perf.gestureflingboost.enable 1
 setprop debug.velocitytracker.strategy impulse
 
@@ -73,7 +72,7 @@ setprop debug.velocitytracker.strategy impulse
 # ==============================================================================
 echo "[4/7] Membuka Limit Thermal OS & Phantom Process Killer Android 13..."
 cmd thermalservice override-status 0
-cmd power set-fixed-performance-mode-enabled true
+# cmd power set-fixed-performance-mode-enabled removed (caps CPU below peak burst)
 cmd power set-adaptive-power-saver-enabled false
 device_config set_sync_disabled_for_tests persistent 2>/dev/null || true
 device_config put activity_manager max_phantom_processes 2147483647 2>/dev/null || true

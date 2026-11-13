@@ -6,7 +6,7 @@
 > **Sistem Operasi**: Xiaomi HyperOS 2.0 (Android 15 — Vanilla Ice Cream)  
 > **Akses Rootless**: Wi-Fi ADB (Port dinamis mDNS) + Shizuku API (UID 2000 Shell Privileges)  
 > **Repository GitHub**: [https://github.com/arstate/redmi-pad-se-turbo-booster](https://github.com/arstate/redmi-pad-se-turbo-booster)  
-> **Mirror Download Publik**: [Gofile Portal](https://gofile.io/d/yJuOtjCt) | [Direct Litterbox APK](https://litter.catbox.moe/cpdkyd.apk)
+> **Mirror Download Publik**: [Gofile Portal (v2.0 2.2MB)](https://gofile.io/d/mhh6OQ8l) | [Direct Litterbox APK (v2.0 2.2MB)](https://litter.catbox.moe/2mqzru.apk)
 
 ---
 
@@ -27,28 +27,29 @@
 
 | Komponen | Spesifikasi Pabrik | Bottleneck Bawaan HyperOS | Solusi Oprekan Kita |
 |---|---|---|---|
-| **SoC** | Snapdragon 680 4G (4x 2.4GHz Gold + 4x 1.9GHz Silver) | Dynamic throttling & drop clock saat thermal naik | Lock clock performa via `cmd power set-fixed-performance-mode-enabled true` & `thermalservice override-status 0` |
+| **SoC** | Snapdragon 680 4G (4x 2.4GHz Gold + 4x 1.9GHz Silver) | Dynamic throttling & drop clock saat thermal naik | Dynamic governor tanpa fixed-perf cap, Gold Core affinity 4-7 untuk SurfaceFlinger & Animator |
 | **GPU** | Adreno 610 | Driver ANGLE bawaan sering crash di MLBB/Unity; render blur berat | Hapus override ANGLE, switch backend ke `skiaglthreaded`, matikan window & dock blurs |
-| **Storage** | 128GB eMMC 5.1 (~20-30 MB/s random write) | Fitur "Memory Extension" menulis swap ke flash eMMC bikin UI freeze | Matikan total swap flash eMMC (`isExternalRamOn 0`), alihkan swap murni ke zRAM LPDDR4X (17 GB/s) |
-| **RAM** | 4GB LPDDR4X | Sering reload aplikasi karena budget tier HyperOS pelit | Spoofing Tier-3 Flagship via MQSAS Call 21 (`v:1,c:3,g:3`), aktifkan Android 15 MGLRU |
-| **Layar** | 11.0" IPS LCD 1200x1920 90Hz | Sering drop ke 60Hz dinamis; DPI bawaan (270+) bikin tampilan mirip HP melar | Kunci permanen 90Hz (`fps_limit 90`), set resolusi native ke `wm density 205` (tampilan tablet desktop) |
+| **Storage** | 128GB eMMC 5.1 (~20-30 MB/s random write) | Fitur "Memory Extension" menulis swap ke flash eMMC bikin UI freeze | Matikan total swap flash eMMC (`persist.miui.extm.enable 0`, `isExternalRamOn 0`), alihkan swap murni ke zRAM LPDDR4X (17 GB/s) |
+| **RAM** | 4GB LPDDR4X | Sering reload aplikasi karena budget tier HyperOS pelit | Spoofing Tier-3 Flagship via MQSAS Call 21 (`v:1,c:3,g:1,m:2`), aktifkan Android 15 MGLRU & Cgroup v2 freezer |
+| **Layar** | 11.0" IPS LCD 1200x1920 90Hz | Sering drop ke 60Hz dinamis; DPI bawaan (270+) bikin tampilan mirip HP melar | Kunci permanen 90Hz (`fps_limit 90`, `sf_fps 90`), set resolusi native ke `wm density 205` (tampilan tablet desktop) |
 | **Navigasi** | Tombol 3 titik atau gestur bergaris | Ada jeda 150-200ms pada garis gestur bawah | Aktifkan `force_fsg_nav_bar=1` & `hide_gesture_line=1` (0ms instant swipe-to-home) |
 
 ---
 
-## 2. Aplikasi 1: Redmi Pad SE Turbo Booster v1.3.5
+## 2. Aplikasi 1: Redmi Pad SE Turbo Booster v2.0.0 (Master Brief v2.0)
 
 - **Package Name**: `com.arya.turbobooster`
-- **Versi**: `versionCode = 9`, `versionName = "1.3.5"` (Updated & Verified live via ADB).
+- **Versi**: `versionCode = 10`, `versionName = "2.0.0"` (Master Engineering Brief v2.0).
 - **Lokasi Project**: `/mnt/HDD-2/BACKUP LINUX/FILE DATA/REDMI PAD SE BOOST/`
 - **File Binary**: `/mnt/HDD-2/BACKUP LINUX/FILE DATA/REDMI PAD SE BOOST/release/TurboBooster.apk`
 - **Fitur & Arsitektur Utama**:
-  1. **Shizuku IPC Bridge (`ShellExecutor.kt`)**: Mengeksekusi command shell tingkat `UID 2000` (setara kabel USB PC) langsung dari tablet tanpa PC dan tanpa root Magisk/KernelSU.
-  2. **Super Performance Mode Orchestrator (`TurboBoosterManager.kt`)**: 21 langkah aktivasi sistem terpadu (Spoofing MQSAS, CPU clock lock, zRAM compaction, SkiaGL backend, 90Hz lock, kill telemetry).
-  3. **AudioPlayerService (`AudioPlayerService.kt`)**: Background foreground service untuk audio feedback uji quad-speaker pada volume maksimal (mendukung embedded asset `kuntilanak_seram.mp3` dan custom file path).
-  4. **Quad-Speaker Studio Tuning (`AudioBoosterManager.kt`)**: Tuning 4 speaker Dolby Atmos, ekspansi stereo stage, dan preset kurva frekuensi Harman Kardon.
-  5. **Quick Settings Tile (`TurboBoosterTileService.kt`)**: Tombol tile di control center / status bar atas Android untuk on/off Turbo Mode 1-klik.
-  6. **Boot Receiver (`BootReceiver.kt`)**: Mengaktifkan Turbo Mode secara otomatis saat tablet selesai booting (restart).
+  1. **Rust Native Daemon (`turbodaemon` / `libturbodaemon.so`)**: Daemon UID 2000 berkecepatan native di jniLibs/arm64-v8a yang berkomunikasi lewat Abstract Unix Domain Socket (`@turbodaemon_ipc`) dengan token auth, 90Hz guard, screen-off gentle memory reclaimer, dan session caging game/CapCut.
+  2. **4 Reversible Profile State Transitions (`STOCK`, `FLAGSHIP_BALANCED`, `EXTREME_GAMING_RENDER`, `DEBLOAT_RESTORE`)**: Transisi profil tanpa reboot, terstruktur dan dapat dibalikkan secara aman.
+  3. **10-Layer Real System Arsenal**: MQSAS Call 21 persistent properties (Gold core 4-7 affinity), Android 15 device_config kill-switches, Cgroup v2 freezer (16 cached processes sweet spot), lmkd heaviest-task, SQLite WAL/NORMAL.
+  4. **Surgical Debloat & Undead `-800` Instant Killer**: Hardcoded Red-List memproteksi 13 paket sistem vital dari crash/uninstall. Green-List uninstall (`pm uninstall -k --user 0`) langsung diikuti `cmd activity crash --user 0 <pkg>` untuk membasmi daemon undead `-800 PERSISTENT` tanpa reboot.
+  5. **Shizuku IPC Bridge (`ShellExecutor.kt`)**: Mengeksekusi command shell tingkat `UID 2000` (setara kabel USB PC) langsung dari tablet tanpa PC dan tanpa root Magisk/KernelSU via refleksi.
+  6. **Quick Settings Tile (`TurboBoosterTileService.kt`)**: Tombol tile di control center / status bar atas Android untuk on/off Turbo Mode 1-klik.
+  7. **Boot Receiver (`BootReceiver.kt`)**: Mengecek status Shizuku saat boot dan memberikan prompt notifikasi ringan jika otentikasi Shizuku perlu diaktifkan ulang.
 
 ---
 

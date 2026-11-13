@@ -8,9 +8,7 @@ echo "[*] Mengaplikasikan 100 Celah Sistem Terverifikasi pada Redmi Pad SE..."
 # Kategori 1: SurfaceFlinger, VSYNC & Compositor Pipeline (Tweaks 1-10)
 # ==============================================================================
 setprop debug.sf.disable_client_composition_cache 1
-setprop debug.sf.disable_backpressure 1
 setprop debug.sf.drop_missed_frames 1
-device_config override core_graphics com.android.graphics.surfaceflinger.flags.vulkan_renderengine true
 device_config override core_graphics com.android.graphics.surfaceflinger.flags.add_sf_skipped_frames_to_trace false
 device_config override core_graphics com.android.graphics.surfaceflinger.flags.enable_layer_command_batching true
 device_config override core_graphics com.android.graphics.surfaceflinger.flags.multithreaded_present true
@@ -32,7 +30,8 @@ setprop debug.hwui.use_hint_manager true
 setprop debug.hwui.app_memory_policy 1
 setprop debug.hwui.drawing_enabled true
 setprop debug.sf.predict_hwc_composition_strategy 1
-setprop debug.sqlite.wal.syncmode OFF
+setprop debug.sqlite.journalmode WAL
+setprop debug.sqlite.wal.syncmode NORMAL
 device_config override core_graphics com.android.graphics.hwui.flags.initialize_gl_always false
 device_config override core_graphics com.android.graphics.hwui.flags.clip_surfaceviews false
 
@@ -100,7 +99,7 @@ device_config override system_performance com.android.server.flags.pin_webview t
 # ==============================================================================
 settings put global isExternalRamOn 0
 settings put global ram_expand_size 0
-settings put global activity_manager_constants "low_swap_threshold_percent=0.5,max_cached_processes=64,max_phantom_processes=128,power_check_max_cpu_1=16,power_check_max_cpu_2=16,power_check_max_cpu_3=8,power_check_max_cpu_4=4,power_check_max_cpu_5=4"
+settings put global activity_manager_constants "low_swap_threshold_percent=0.5,max_cached_processes=16,max_phantom_processes=128,power_check_max_cpu_1=16,power_check_max_cpu_2=16,power_check_max_cpu_3=8,power_check_max_cpu_4=4,power_check_max_cpu_5=4"
 device_config override lmkd_native kill_heaviest_task true
 device_config override lmk_native_boot swap_util_max 85
 device_config override lmk_native_boot thrashing_limit 20
@@ -142,13 +141,11 @@ settings put secure high_performance_mode 1
 # ==============================================================================
 # Kategori 10: Tablet Touch Digitizer, Power Management & Bloatware Suppression (Tweaks 91-100)
 # ==============================================================================
-cmd thermalservice override-status 0
-cmd power set-fixed-performance-mode-enabled true
 cmd power set-adaptive-power-saver-enabled false
 settings put global power_manager_constants "no_cached_app_scheduling=true"
 cmd device_config put input_native_boot velocitytracker_strategy impulse
 settings put system pointer_speed 3
-settings put secure long_press_timeout 250
+settings put secure long_press_timeout 200
 settings put secure tap_timeout 100
 settings put secure multi_press_timeout 150
 settings put system touch_game_mode 3
@@ -161,9 +158,9 @@ settings put global enable_miui_desktop_blur 0
 settings put system miui_home_blur_level 0
 settings put system config_icon_animation 0
 settings put system miui_home_animation_rate 2
-settings put global window_animation_scale 0.35
-settings put global transition_animation_scale 0.35
-settings put global animator_duration_scale 0.35
+settings put global window_animation_scale 0.60
+settings put global transition_animation_scale 0.60
+settings put global animator_duration_scale 0.60
 settings put global enable_freeform_support 1
 settings put global force_resizable_activities 1
 
@@ -176,16 +173,15 @@ cmd appops set com.xiaomi.joyose TOAST_WINDOW ignore 2>/dev/null || true
 am force-stop com.xiaomi.joyose 2>/dev/null || true
 
 # MQSAS Service Backdoor for Level 6 Computility
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.computility.cpulevel 6" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.computility.gpulevel 6" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.advanced_visual_release 3" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_view_smoothcorner true" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_window_smoothcorner true" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.sf.disable_blurs 1" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.background_blur_supported false" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui_blur_enabled false" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui.blur.enable false" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui.sf_fps 90" s16 "/storage/emulated/0/log.txt" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.computility.cpulevel 6" s16 "/dev/null" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.advanced_visual_release 3" s16 "/dev/null" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_view_smoothcorner true" s16 "/dev/null" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_window_smoothcorner true" s16 "/dev/null" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.sf.disable_blurs 1" s16 "/dev/null" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.background_blur_supported false" s16 "/dev/null" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui_blur_enabled false" s16 "/dev/null" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui.blur.enable false" s16 "/dev/null" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui.sf_fps 90" s16 "/dev/null" i32 600 2>/dev/null || true
 
 # Wi-Fi & BLE Background Location Polling Lockdown (Eliminates Radio Jitter)
 settings put global wifi_scan_always_enabled 0
@@ -200,8 +196,7 @@ setprop persist.device_config.runtime_native_boot.mglru true
 # Package Manager Stale Cache Trimming (Saves eMMC space)
 pm trim-caches 999G 2>/dev/null || true
 
-# SurfaceFlinger Buffer Latching & Phase Offset (4PDA / Coolapk fix for 90Hz Stutter)
-setprop debug.sf.latch_unsignaled 1
+# SurfaceFlinger Hardware Composer VDS & Phase Offset
 setprop debug.sf.enable_hwc_vds 1
 setprop debug.sf.enable_advanced_sf_phase_offset 1
 setprop debug.hwui.render_dirty_regions false

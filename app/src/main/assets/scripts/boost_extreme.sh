@@ -49,15 +49,14 @@ echo "=== [5/6] QUALCOMM ADRENO HARDWARE ACCELERATION ==="
 setprop debug.qc.hardware true
 setprop debug.qctwa.preservebuf 1
 setprop debug.qctwa.forcegpu 1
-setprop debug.hwui.renderer skiavk
-setprop debug.renderengine.backend skiavk
+setprop debug.hwui.renderer skiagl
+setprop debug.renderengine.backend skiaglthreaded
 setprop debug.sf.enable_gl_backpressure 0
-setprop debug.sf.disable_backpressure 1
 
 echo "=== [6/6] SYSTEM ANIMATION INSTANT RESPONSE ==="
-settings put global window_animation_scale 0.0
-settings put global transition_animation_scale 0.0
-settings put global animator_duration_scale 0.0
+settings put global window_animation_scale 0.25
+settings put global transition_animation_scale 0.25
+settings put global animator_duration_scale 0.25
 
 echo "=== [7/6] SPEED-AOT COMPILATION (ROBLOX, PUBG, MINECRAFT) ==="
 for pkg in com.roblox.client com.tencent.ig com.mojang.minecraftpe ph.spacedesk.beta; do

@@ -40,8 +40,6 @@ settings put global game_driver_all_apps 1
 settings put global updatable_driver_all_apps 1
 
 # 3. Anti-Thermal Throttling & Power
-cmd thermalservice override-status 0
-cmd power set-fixed-performance-mode-enabled true
 cmd power set-adaptive-power-saver-enabled false
 dumpsys deviceidle disable
 settings put global adaptive_battery_management_enabled 0
@@ -58,18 +56,20 @@ settings put global high_performance_mode 1
 settings put global miui_performance_mode 1
 settings put system performance_mode 1
 
-# 4. Vulkan SkiaVK, GPU VRAM & ADPF
-setprop debug.hwui.renderer skiavk
+# 4. SkiaGL Hardware Acceleration, PBO & ADPF
+setprop debug.hwui.renderer skiagl
+setprop debug.renderengine.backend skiaglthreaded
 setprop debug.hwui.use_gpu_pixel_buffers true
 setprop debug.hwui.render_thread_priority -20
-setprop debug.hwui.target_cpu_time_percent 10
+setprop debug.hwui.target_cpu_time_percent 90
 setprop debug.hwui.use_partial_build_delay true
 setprop debug.composition.type gpu
 setprop debug.sf.hw 1
 setprop debug.egl.hw 1
 setprop debug.egl.buffering 2
 setprop debug.egl.swapinterval 0
-setprop debug.sf.latch_unsignaled 1
+setprop debug.sqlite.journalmode WAL
+setprop debug.sqlite.wal.syncmode NORMAL
 setprop debug.sf.early_phase_offset_ns 1000000
 setprop debug.sf.early_app_phase_offset_ns 1000000
 setprop debug.sf.early_gl_phase_offset_ns 1000000
@@ -99,12 +99,12 @@ device_config put surface_flinger early_sf_phase_offset_ns 1000000
 device_config put surface_flinger early_app_phase_offset_ns 1000000
 
 device_config put lmk_native_boot kill_timeout_ms 100
-device_config put lmk_native_boot thrashing_limit 80
-device_config put lmk_native_boot swap_util_max 95
-device_config put activity_manager max_cached_processes 64
-device_config put activity_manager prodev_max_cached_processes 64
+device_config put lmk_native_boot thrashing_limit 50
+device_config put lmk_native_boot swap_util_max 85
+device_config put activity_manager max_cached_processes 16
+device_config put activity_manager prodev_max_cached_processes 16
 device_config put runtime_native_boot use_app_image_startup true
-device_config put activity_manager max_phantom_processes 2147483647
+device_config put activity_manager max_phantom_processes 128
 settings put global cached_apps_freezer enabled
 
 
@@ -183,7 +183,7 @@ for pkg in com.lemon.lvoverseas com.lemon.ccpadpro com.adobe.lrmobile com.mojang
   cmd deviceidle whitelist +$pkg 2>/dev/null || true
   cmd appops set $pkg RUN_IN_BACKGROUND allow 2>/dev/null || true
 done
-device_config put activity_manager use_compaction false
+device_config put activity_manager use_compaction true
 cmd appops set com.mobile.legends READ_EXTERNAL_STORAGE allow 2>/dev/null || true
 cmd appops set com.mobile.legends WRITE_EXTERNAL_STORAGE allow 2>/dev/null || true
 cmd appops set com.mobile.legends MANAGE_EXTERNAL_STORAGE allow 2>/dev/null || true
@@ -203,12 +203,10 @@ settings delete global angle_gl_driver_selection_values
 settings delete global angle_gl_driver_selection_pkgs
 cmd power set-adaptive-power-saver-enabled false
 cmd power set-mode 0
-cmd thermalservice override-status 0
-setprop debug.sf.disable_backpressure 1
 setprop debug.egl.swapinterval 0
 setprop debug.hwui.drop_shadow_cache_size 0
-setprop debug.hwui.renderer skiavk
-setprop debug.renderengine.backend skiavk
+setprop debug.hwui.renderer skiagl
+setprop debug.renderengine.backend skiaglthreaded
 
 # 10. Hardware Composer (HWC) Direct Scanout & Flash Storage Trim
 setprop debug.sf.predict_hwc_composition_strategy 1

@@ -32,9 +32,7 @@ adb shell "settings put global game_driver_opt_in_apps com.tencent.ig"
 adb shell "settings put global updatable_driver_all_apps 1"
 adb shell "settings put global updatable_driver_production_opt_in_apps com.tencent.ig"
 
-echo "[+] 6. SurfaceFlinger & Latency Buffering Tuning..."
-adb shell "setprop debug.sf.disable_backpressure 1"
-adb shell "setprop debug.sf.latch_unsignaled 1"
+echo "[+] 6. SurfaceFlinger & Performance Tuning..."
 adb shell "setprop debug.performance.tuning 1"
 adb shell "setprop debug.egl.hw 1"
 

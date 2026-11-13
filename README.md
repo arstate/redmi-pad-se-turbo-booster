@@ -14,34 +14,43 @@ Powered by the **Shizuku API (UID 2000 Shell Privileges)** and proprietary Xiaom
 
 ## 📱 Hardware & Benchmark Baseline
 
-| Parameter | Factory Stock Specification | Turbo Booster Target |
+| Parameter | Factory Stock Specification | Turbo Booster Target (v2.0) |
 |---|---|---|
-| **SoC** | Qualcomm Snapdragon 680 (6nm) | Locked: 4x Gold @ 2.40 GHz + 4x Silver @ 1.90 GHz |
-| **GPU** | Adreno 610 (Dynamic Scaling) | SkiaGL Threaded, PBO buffers, Vulkan RenderEngine |
-| **RAM** | 4GB LPDDR4X (Slow flash swap) | Pure in-RAM zRAM Compaction (Zero eMMC 5.1 thrashing) |
-| **Storage** | 128GB eMMC 5.1 (~20MB/s random write) | In-Memory SQLite Journaling (`debug.sqlite.journalmode MEMORY`) |
-| **Display** | 11.0" IPS LCD, 1200x1920 @ 90Hz | Locked 90Hz (`refresh_rate_mode 2`, `fps_limit 90`) |
+| **SoC** | Qualcomm Snapdragon 680 SM6225 | Dynamic Burst to 2.40 GHz Kryo Gold + 1.90 GHz Silver (No fixed cap) |
+| **GPU** | Adreno 610 (Budget GPU) | Flagship Animation Physics (`c:3`) without GPU Blur Choke (`g:1`) |
+| **RAM** | 4GB LPDDR4X (Slow flash swap) | Pure in-RAM ZRAM Compaction + Cgroup v2 Freezer (Zero eMMC thrashing) |
+| **Storage** | 128GB eMMC 5.1 (~20MB/s random write) | Safe In-Memory WAL SQLite (`debug.sqlite.journalmode WAL`, `syncmode NORMAL`) |
+| **Display** | 11.0" IPS LCD, 1200x1920 @ 90Hz | Locked 90Hz (`refresh_rate_mode 2`, `peak_refresh_rate 90.0`) |
 | **Density** | Variable (often drops to phone UI) | Locked **`wm density 205`** (True Android tablet desktop layout) |
 | **Navigation** | 3-button or delayed gesture bar | **`force_fsg_nav_bar=1`** + `hide_gesture_line=1` (Instant 0ms swipe) |
 
 ---
 
-## 🚀 Key Features & Architectural Modules
+## 🚀 Key Features & Architectural Modules (v2.0 Zero-Placebo Arsenal)
 
-### 1. ⚡ Super Performance Mode (ON)
-* **CPU Clock Lock**: Locks Kryo 265 Gold cores to **2.40 GHz** and Silver cores to **1.90 GHz** via `cmd power set-fixed-performance-mode-enabled true`.
-* **Thermal Throttling Bypass**: Bypasses HyperOS thermal limits via `cmd thermalservice override-status 0`.
-* **In-RAM SQLite Journaling**: Routes database writes directly to RAM (`setprop debug.sqlite.journalmode MEMORY` & `syncmode OFF`), eliminating the eMMC 5.1 flash bottleneck.
-* **Pure zRAM Compaction**: Disables eMMC virtual swap (`persist.miui.extm.enable 0`) and forces Android 15 `CachedAppOptimizer` in-memory compression (5000ms throttle, 8MB RSS threshold).
-* **SurfaceFlinger & 90Hz Frame Pacing**: Locks permanent 90Hz refresh rate, enables latch unsignaled buffers, and kills GPU-heavy Gaussian blurs (`disable_window_blurs 1`, `enable_miui_desktop_blur 0`).
-* **HyperOS Flagship Unf*cker**: Elevates device status from budget to Tier-3 Flagship (`deviceLevelList "v:1,c:3,g:1,m:2"`), elevating CPU and GPU computility to Level 6 via MQSAS Call 21.
-* **Safe Debloat**: Trims ~800MB RAM by unloading background leeches (`com.google.android.apps.messaging`, `com.milink.service`, `com.xiaomi.aicr`, `com.miui.aod`, `com.android.updater`, `com.google.android.as`).
+### 1. ⚡ Flagship Balanced Mode (Default Profile)
+* **SM6225 Gold Core Affinity**: Directs SurfaceFlinger and HyperOS animation scheduling to Gold Kryo cores 4-7 (`persist.sys.miui.sf_cores 4-7`, `persist.vendor.display.miui.composer_boost 4-7`).
+* **Android 15 Cgroup v2 Freezer & In-RAM Compaction**: Locks 16 cached processes sweet spot for 4GB RAM (`device_config put activity_manager max_cached_processes 16`).
+* **Safe SQLite WAL Acceleration**: Safe WAL mode (`journalmode WAL` & `syncmode NORMAL`) eliminating corruption risk while speeding up app database writes.
+* **Pure ZRAM Compaction**: Decommissions destructive 8GB virtual swap extensions (`persist.miui.extm.enable 0`) to preserve eMMC 5.1 life and keep Linux page cache alive.
+* **Flagship Animation Physics without Blur Choke**: Enforces `deviceLevelList "v:1,c:3,g:1,m:2"` (unlocks smooth flagship animations `c:3` while disabling GPU blur choking on Adreno 610 `g:1`).
+* **Hybrid Rust Daemon (`libturbodaemon.so`)**: Persistent ~1.5 MB RSS UID-2000 native daemon with direct `rsbinder` IPC for MQSAS transaction 21, automated 90Hz guard, and screen-off gentle compaction.
+* **Surgical Debloat & Undead Killer**: Hardcoded 13 core packages in Red-List protection; uninstalls green-list bloat and immediately crashes undead `-800 PERSISTENT` daemons from memory.
 
-### 2. ↺ Stock Mode (OFF)
-* Restores dynamic CPU frequency scaling (down to 691 MHz for battery preservation).
-* Re-enables default thermal governance.
-* Restores default window animation scales (1.0x).
-* Reinstalls debloated system apps cleanly via `cmd package install-existing`.
+### 2. 🎮 Extreme Gaming & Render Mode
+* Thermal limit override (`cmd thermalservice override-status 0`).
+* Freezes Joyose game throttling daemon.
+* Ultra snappy 0.25x animation scale and 0.8x native resolution downscaling for heavy 3D titles.
+* Automated game session isolation: suspends background hogs when target games/CapCut enter foreground, restores cleanly on exit.
+
+### 3. ↺ Stock Mode
+* Restores factory stock settings, Blurs, and Tier 1 device level (`v:1,c:1,g:1,m:1`).
+* Resets thermal governance to hardware sensors.
+* Restores default 1.0x animation scales and auto refresh rate.
+* Stops native daemon and cleans session state.
+
+### 4. 🔄 Debloat Restore
+* 1-tap reinstallation of all debloated packages for user 0 via `cmd package install-existing`.
 
 ---
 

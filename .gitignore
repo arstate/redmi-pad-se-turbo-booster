@@ -10,3 +10,6 @@ app/build
 .cxx
 __pycache__/
 *.pyc
+Archive.zip
+turbodaemon/target/
+
