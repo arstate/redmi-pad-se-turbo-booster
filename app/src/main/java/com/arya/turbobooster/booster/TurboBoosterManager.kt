@@ -372,9 +372,8 @@ object TurboBoosterManager {
         // Cage Heavy Social/Shopping Apps (excluding user's protected apps)
         cageHeavyBackgroundApps(context, onLog)
 
-        // --- LAYER 5: DISPLAY 90Hz, 205 DPI, FSG, INPUT & PINNER ---
-        runStep("wm size 1200x1920", "Screen Resolution -> 1200x1920", onLog)
-        runStep("wm density 205", "Screen Density -> 205 DPI (Tablet Native Grid)", onLog)
+        // --- LAYER 5: DISPLAY 90Hz, FSG, INPUT & PINNER (DPI PRESERVED) ---
+        // Never override tablet DPI automatically (user preference preserved)
 
         runStep("settings put system peak_refresh_rate 90.0", "Peak Refresh Rate -> 90.0 Hz", onLog)
         runStep("settings put system min_refresh_rate 90.0", "Min Refresh Rate -> 90.0 Hz", onLog)
@@ -511,7 +510,7 @@ object TurboBoosterManager {
         runStep("settings put global animator_duration_scale 1.0", "Reset Animator Duration Scale -> 1.0x", onLog)
         runStep("settings put system miui_home_animation_rate 1", "Reset Home Animation Rate -> 1", onLog)
         runStep("settings put secure refresh_rate_mode 0", "Reset Refresh Rate Mode -> Auto/Dynamic", onLog)
-        runStep("wm density reset", "Reset Screen Density to Default", onLog)
+        // wm density left untouched to preserve user preference
 
         // Reset SQLite
         runStep("setprop debug.sqlite.journalmode \"\"", "Reset SQLite Journal Mode", onLog)
