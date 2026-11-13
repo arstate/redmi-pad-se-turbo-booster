@@ -385,12 +385,7 @@ object TurboBoosterManager {
         runStep("settings put system miui_home_blur_level 0", "Home Blur Level -> 0", onLog)
         runStep("settings put system enable_dock_blur 0", "Dock Blur -> 0", onLog)
 
-        // Flagship vs Blur Fix: c:3 without Adreno 610 blur choke g:3
-        runStep("settings put system deviceLevelList \"v:1,c:3,g:1,m:2\"", "Device Level -> v:1,c:3,g:1,m:2 (Flagship c:3, GPU Saver g:1)", onLog)
-
-        runStep("settings put global force_fsg_nav_bar 1", "FSG Navigation -> ENABLED", onLog)
-        runStep("settings put system force_fsg_nav_bar 1", "System FSG Navigation -> ENABLED", onLog)
-        runStep("settings put global hide_gesture_line 1", "Hide Gesture Indicator Line", onLog)
+        // Do not force force_fsg_nav_bar or hide_gesture_line (prevents com.miui.home crash to lockscreen)
 
         // Flagship Balanced Animation Scale (0.60x - Smooth & Fast)
         runStep("settings put system miui_home_animation_rate 2", "MIUI Home Animation Rate -> 2", onLog)

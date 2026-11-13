@@ -273,11 +273,7 @@ fn main() {
                     run_cmd("/system/bin/settings", &["put", "secure", "user_refresh_rate", "90"]);
                 }
 
-                // Check Device Level
-                let (_, dl) = run_cmd("/system/bin/settings", &["get", "system", "deviceLevelList"]);
-                if !dl.contains("c:3") {
-                    run_cmd("/system/bin/settings", &["put", "system", "deviceLevelList", "v:1,c:3,g:1,m:2"]);
-                }
+                // Device level left untouched to avoid triggering com.miui.home launcher crash
 
                 // Check Cgroup v2 Freezer
                 let (_, freezer) = run_cmd("/system/bin/device_config", &["get", "activity_manager_native_boot", "use_freezer"]);
