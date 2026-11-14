@@ -152,8 +152,26 @@ class TurboBoosterArsenalTest {
         val protected = TurboBoosterManager.DEFAULT_PROTECTED_APPS
         assertTrue("Launcher com.miui.home must be protected", protected.contains("com.miui.home"))
         assertTrue("SystemUI com.android.systemui must be protected", protected.contains("com.android.systemui"))
+        assertTrue("TurboBooster itself must be protected", protected.contains("com.arya.turbobooster"))
+        assertTrue("Shizuku must be in default protected apps", protected.contains("moe.shizuku.privileged.api"))
         assertTrue("WhatsApp must be in default protected apps", protected.contains("com.whatsapp"))
         assertTrue("Telegram must be in default protected apps", protected.contains("org.telegram.messenger"))
         assertTrue("Discord must be in default protected apps", protected.contains("com.discord"))
+    }
+
+    @Test
+    fun testNoCompactSystemInSourceCode() {
+        val projectDir = File(System.getProperty("user.dir") ?: ".")
+        val rootDir = if (projectDir.name == "app") projectDir.parentFile else projectDir
+        val srcDir = File(rootDir, "app/src/main/java")
+        val ktFiles = srcDir.walk().filter { it.extension == "kt" }.toList()
+
+        for (file in ktFiles) {
+            val content = file.readText()
+            assertFalse(
+                "File ${file.name} must never execute 'cmd activity compact system'!",
+                content.contains("cmd activity compact system")
+            )
+        }
     }
 }

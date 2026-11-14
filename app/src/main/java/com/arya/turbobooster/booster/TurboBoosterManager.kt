@@ -97,6 +97,8 @@ object TurboBoosterManager {
     val DEFAULT_PROTECTED_APPS = setOf(
         "com.miui.home",
         "com.android.systemui",
+        "com.arya.turbobooster",
+        "moe.shizuku.privileged.api",
         "com.whatsapp",
         "com.whatsapp.w4b",
         "org.telegram.messenger",
@@ -177,11 +179,23 @@ object TurboBoosterManager {
     }
 
     fun getProtectedApps(context: Context): Set<String> {
-        return getPrefs(context).getStringSet(KEY_PROTECTED_APPS, DEFAULT_PROTECTED_APPS) ?: DEFAULT_PROTECTED_APPS
+        val stored = getPrefs(context).getStringSet(KEY_PROTECTED_APPS, null)
+        val base = stored?.toMutableSet() ?: DEFAULT_PROTECTED_APPS.toMutableSet()
+        // Guarantee core frameworks & booster remain strictly protected across upgrades
+        base.add("com.miui.home")
+        base.add("com.android.systemui")
+        base.add("com.arya.turbobooster")
+        base.add("moe.shizuku.privileged.api")
+        return base
     }
 
     fun setProtectedApps(context: Context, apps: Set<String>) {
-        getPrefs(context).edit().putStringSet(KEY_PROTECTED_APPS, apps).apply()
+        val safeApps = apps.toMutableSet()
+        safeApps.add("com.miui.home")
+        safeApps.add("com.android.systemui")
+        safeApps.add("com.arya.turbobooster")
+        safeApps.add("moe.shizuku.privileged.api")
+        getPrefs(context).edit().putStringSet(KEY_PROTECTED_APPS, safeApps).apply()
     }
 
     fun addProtectedApp(context: Context, pkg: String) {
@@ -191,6 +205,9 @@ object TurboBoosterManager {
     }
 
     fun removeProtectedApp(context: Context, pkg: String) {
+        if (pkg == "com.miui.home" || pkg == "com.android.systemui" || pkg == "com.arya.turbobooster" || pkg == "moe.shizuku.privileged.api") {
+            return // Immutable system framework & booster immunity
+        }
         val current = getProtectedApps(context).toMutableSet()
         current.remove(pkg)
         setProtectedApps(context, current)
@@ -357,12 +374,20 @@ object TurboBoosterManager {
         runStep("device_config put lmkd_native swap_free_low_percentage 15", "LMKD Swap Free Low -> 15%", onLog)
 
         // --- LAYER 2.5: EXPLICIT HOME LAUNCHER & SYSTEMUI IMMUNITY ---
+        runStep("settings put system miui_home_animation_rate 2", "MIUI Home Fast Animation Rate -> 2", onLog)
         runStep("cmd activity set-bg-restriction-level --user 0 com.miui.home exempted", "Exempt Launcher from BG Restriction", onLog)
         runStep("am set-standby-bucket com.miui.home active", "Launcher Standby Bucket -> ACTIVE", onLog)
         runStep("cmd appops set com.miui.home RUN_IN_BACKGROUND allow", "Allow Launcher Background AppOps", onLog)
         runStep("cmd appops set com.miui.home RUN_ANY_IN_BACKGROUND allow", "Allow Launcher Run Any BG AppOps", onLog)
+        runStep("cmd activity set-bg-restriction-level --user 0 com.android.systemui exempted", "Exempt SystemUI from BG Restriction", onLog)
+        runStep("am set-standby-bucket com.android.systemui active", "SystemUI Standby Bucket -> ACTIVE", onLog)
+        runStep("cmd appops set com.android.systemui RUN_IN_BACKGROUND allow", "Allow SystemUI Background AppOps", onLog)
+        runStep("cmd appops set com.android.systemui RUN_ANY_IN_BACKGROUND allow", "Allow SystemUI Run Any BG AppOps", onLog)
+        runStep("cmd activity set-bg-restriction-level --user 0 com.arya.turbobooster exempted", "Exempt TurboBooster from BG Restriction", onLog)
+        runStep("am set-standby-bucket com.arya.turbobooster active", "TurboBooster Standby Bucket -> ACTIVE", onLog)
         runStep("dumpsys deviceidle whitelist +com.miui.home", "DeviceIdle Whitelist -> com.miui.home", onLog)
         runStep("dumpsys deviceidle whitelist +com.android.systemui", "DeviceIdle Whitelist -> com.android.systemui", onLog)
+        runStep("dumpsys deviceidle whitelist +com.arya.turbobooster", "DeviceIdle Whitelist -> com.arya.turbobooster", onLog)
         runStep("device_config put system_performance com.android.server.flags.skip_home_art_pins false", "Enable Home ART Pins in Pinner", onLog)
         runStep("device_config put system_performance com.android.server.flags.pin_webview true", "Pin WebView in Pinner", onLog)
 

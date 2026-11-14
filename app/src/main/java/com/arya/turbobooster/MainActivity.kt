@@ -179,7 +179,7 @@ class MainActivity : AppCompatActivity() {
                 val ok = DaemonController.triggerReclaim(this@MainActivity)
                 appendLog("In-RAM Compaction via Daemon: ${if (ok) "SUCCESS" else "DIRECT FALLBACK"}")
                 if (!ok) {
-                    ShellExecutor.execute("cmd activity compact system", requirePrivileged = true)
+                    // Safe gentle trim: avoid squeezing launcher heap into zRAM
                     ShellExecutor.execute("sm fstrim", requirePrivileged = true)
                 }
                 Toast.makeText(this@MainActivity, "🧹 In-RAM Compaction Complete!", Toast.LENGTH_SHORT).show()

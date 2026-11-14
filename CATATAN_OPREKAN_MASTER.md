@@ -551,21 +551,30 @@ Berdasarkan investigasi menyeluruh melalui `dumpsys activity exit-info com.miui.
 2. **Eliminasi Fatal Hardware Crash (`SmoothCorner`)**:
    - Mengunci `persist.sys.support_window_smoothcorner false` dan `persist.sys.support_view_smoothcorner false` via MQSAS 21.
    - Me-reset `persist.sys.computility.cpulevel 0` dan `persist.sys.advanced_visual_release 0` ke level hardware aman Snapdragon 680.
-3. **Imunitas Mutlak Launcher & SystemUI**:
+3. **Imunitas Mutlak Launcher, SystemUI & TurboBooster**:
    - Mengeksekusi proteksi tingkat framework:
+     * `settings put system miui_home_animation_rate 2`
      * `cmd activity set-bg-restriction-level --user 0 com.miui.home exempted`
+     * `cmd activity set-bg-restriction-level --user 0 com.android.systemui exempted`
+     * `cmd activity set-bg-restriction-level --user 0 com.arya.turbobooster exempted`
      * `am set-standby-bucket com.miui.home active`
+     * `am set-standby-bucket com.android.systemui active`
+     * `am set-standby-bucket com.arya.turbobooster active`
      * `cmd appops set com.miui.home RUN_IN_BACKGROUND allow` & `RUN_ANY_IN_BACKGROUND allow`
-     * `dumpsys deviceidle whitelist +com.miui.home` & `+com.android.systemui`
+     * `cmd appops set com.android.systemui RUN_IN_BACKGROUND allow` & `RUN_ANY_IN_BACKGROUND allow`
+     * `dumpsys deviceidle whitelist +com.miui.home`, `+com.android.systemui`, `+com.arya.turbobooster`
      * `device_config put system_performance com.android.server.flags.skip_home_art_pins false`
      * `device_config put system_performance com.android.server.flags.pin_webview true`
      * `cmd pinner repin`
    - Menghapus `com.miui.home` dari perulangan `am compact full` di seluruh skrip (`boost_pure_zram_compaction.sh`, dll).
+   - Menghapus residu fallback `cmd activity compact system` dari `MainActivity.kt` (menggantinya dengan safe trim `sm fstrim` tanpa mengorbankan heap launcher).
+   - Memperbaiki `TurboBoosterManager.getProtectedApps` dan `removeProtectedApp` agar `com.miui.home`, `com.android.systemui`, `com.arya.turbobooster`, dan `moe.shizuku.privileged.api` selalu dijamin ada (immutable) bahkan setelah update dari versi lama yang memiliki shared_prefs usang.
 4. **Rust Native Daemon (`turbodaemon`) Hardening**:
-   - Memasukkan `com.miui.home`, `com.android.systemui`, `com.miui.securitycenter`, `com.google.android.gms`, dan `com.arya.turbobooster` ke dalam `protected_apps`.
+   - Memasukkan `com.miui.home`, `com.android.systemui`, `com.miui.securitycenter`, `com.google.android.gms`, `com.arya.turbobooster`, dan `moe.shizuku.privileged.api` ke dalam `protected_apps`.
    - Menghapus pemanggilan `cmd activity compact system` dari screen-off reclaimer dan `TRIGGER_RECLAIM`.
-   - Menambahkan background monitoring thread yang secara persisten mengawal status `kill_heaviest_task false`, `max_cached_processes 24`, dan `support_window_smoothcorner false`.
-   - Mengompilasi ulang binary via `build_daemon.sh` (`libturbodaemon.so` 536KB) dan mem-packaging ke APK.
+   - Mengoptimalkan deteksi layar `is_screen_awake()` via `getprop debug.tracing.screen_state` (0-fork fastpath, mengeliminasi spam `dumpsys power` berkala).
+   - Menambahkan background monitoring thread yang secara persisten mengawal status `kill_heaviest_task false`, `max_cached_processes 24`, dan `support_window_smoothcorner false`, serta men-throttle eksekusi imunitas framework ke interval berkala aman (~5 menit) agar tidak membebani binder thread pool `system_server`.
+   - Mengompilasi ulang binary via `build_daemon.sh` (`libturbodaemon.so` 537KB) dan mem-packaging ke APK.
 
 ### 3. Hasil Pengujian & Verifikasi Live Tablet:
 - **Pengujian Multi-Aplikasi Berat**: CapCut Pad Pro (`com.lemon.ccpadpro`), Facebook (`com.facebook.katana`), Shopee (`com.shopee.id`), dan Oxide Browser (`com.aistudio.oxidebrowser.vxkrzt`) dibuka bergantian.

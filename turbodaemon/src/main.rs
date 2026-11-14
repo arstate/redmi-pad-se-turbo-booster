@@ -57,11 +57,15 @@ impl DaemonState {
         protected.insert("com.miui.securitycenter".to_string());
         protected.insert("com.google.android.gms".to_string());
         protected.insert("com.arya.turbobooster".to_string());
+        protected.insert("moe.shizuku.privileged.api".to_string());
         protected.insert("com.whatsapp".to_string());
         protected.insert("com.whatsapp.w4b".to_string());
         protected.insert("org.telegram.messenger".to_string());
         protected.insert("com.discord".to_string());
         protected.insert("com.tailscale.ipn".to_string());
+        protected.insert("com.zerotier.one".to_string());
+        protected.insert("free.vpn.unblock.proxy.vpnmaster".to_string());
+        protected.insert("com.vpn.free.hotspot.secure.vpnify".to_string());
         protected.insert("com.google.android.deskclock".to_string());
         protected.insert("com.android.deskclock".to_string());
 
@@ -145,8 +149,16 @@ fn get_current_rss_kb() -> usize {
     0
 }
 
-// Low-overhead screen state detection using sysfs (0 forks) with dumpsys fallback
+// Low-overhead screen state detection using sysfs & debug props (0 forks) with dumpsys fallback
 fn is_screen_awake() -> bool {
+    let (_, state) = run_cmd("/system/bin/getprop", &["debug.tracing.screen_state"]);
+    let trimmed = state.trim();
+    if trimmed == "2" {
+        return true;
+    } else if trimmed == "1" {
+        return false;
+    }
+
     for path in &[
         "/sys/class/backlight/panel0-backlight/brightness",
         "/sys/class/leds/lcd-backlight/brightness",
@@ -262,7 +274,9 @@ fn main() {
     let state_guard = Arc::clone(&state);
     let running_guard = Arc::clone(&running);
     thread::spawn(move || {
+        let mut cycle_count: u32 = 0;
         while running_guard.load(Ordering::Relaxed) {
+            cycle_count = cycle_count.wrapping_add(1);
             let prof = {
                 let st = state_guard.lock().unwrap();
                 st.profile.clone()
@@ -307,12 +321,19 @@ fn main() {
                     mqsas_setprop("persist.sys.mms.kill_fas_cached_idle", "false");
                 }
 
-                // Protect com.miui.home and SystemUI from being killed or restricted
-                run_cmd("/system/bin/cmd", &["activity", "set-bg-restriction-level", "--user", "0", "com.miui.home", "exempted"]);
-                run_cmd("/system/bin/am", &["set-standby-bucket", "com.miui.home", "active"]);
-                run_cmd("/system/bin/device_config", &["put", "system_performance", "com.android.server.flags.skip_home_art_pins", "false"]);
-                run_cmd("/system/bin/dumpsys", &["deviceidle", "whitelist", "+com.miui.home"]);
-                run_cmd("/system/bin/dumpsys", &["deviceidle", "whitelist", "+com.android.systemui"]);
+                // Protect com.miui.home and SystemUI from being killed or restricted (run on startup and every ~5 minutes)
+                if cycle_count == 1 || cycle_count % 36 == 0 {
+                    run_cmd("/system/bin/cmd", &["activity", "set-bg-restriction-level", "--user", "0", "com.miui.home", "exempted"]);
+                    run_cmd("/system/bin/cmd", &["activity", "set-bg-restriction-level", "--user", "0", "com.android.systemui", "exempted"]);
+                    run_cmd("/system/bin/cmd", &["activity", "set-bg-restriction-level", "--user", "0", "com.arya.turbobooster", "exempted"]);
+                    run_cmd("/system/bin/am", &["set-standby-bucket", "com.miui.home", "active"]);
+                    run_cmd("/system/bin/am", &["set-standby-bucket", "com.android.systemui", "active"]);
+                    run_cmd("/system/bin/am", &["set-standby-bucket", "com.arya.turbobooster", "active"]);
+                    run_cmd("/system/bin/device_config", &["put", "system_performance", "com.android.server.flags.skip_home_art_pins", "false"]);
+                    run_cmd("/system/bin/dumpsys", &["deviceidle", "whitelist", "+com.miui.home"]);
+                    run_cmd("/system/bin/dumpsys", &["deviceidle", "whitelist", "+com.android.systemui"]);
+                    run_cmd("/system/bin/dumpsys", &["deviceidle", "whitelist", "+com.arya.turbobooster"]);
+                }
 
                 // Check Cgroup v2 Freezer
                 let (_, freezer) = run_cmd("/system/bin/device_config", &["get", "activity_manager_native_boot", "use_freezer"]);
