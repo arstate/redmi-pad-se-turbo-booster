@@ -6,7 +6,7 @@
 > **Sistem Operasi**: Xiaomi HyperOS 2.0 (Android 15 — Vanilla Ice Cream)  
 > **Akses Rootless**: Wi-Fi ADB (Port dinamis mDNS) + Shizuku API (UID 2000 Shell Privileges)  
 > **Repository GitHub**: [https://github.com/arstate/redmi-pad-se-turbo-booster](https://github.com/arstate/redmi-pad-se-turbo-booster)  
-> **Mirror Download Publik**: [Catbox Direct (v2.1.3 2.1MB)](https://files.catbox.moe/1kwofs.apk) | [Gofile Portal (v2.1.3 2.1MB)](https://gofile.io/d/LTsDE2cw) | [GitHub Raw Direct](https://raw.githubusercontent.com/arstate/redmi-pad-se-turbo-booster/main/release/TurboBooster.apk)
+> **Mirror Download Publik**: [Gofile Portal (v2.1.4 2.1MB)](https://gofile.io/d/9xV4jMKX) | [GitHub Raw Direct (1-Click APK)](https://raw.githubusercontent.com/arstate/redmi-pad-se-turbo-booster/main/release/TurboBooster.apk) | [Tmpfiles Portal](https://tmpfiles.org/wtAL7dCh6NGV/turbobooster.apk)
 
 ---
 
