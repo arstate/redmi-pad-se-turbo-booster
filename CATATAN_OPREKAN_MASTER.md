@@ -424,4 +424,44 @@ git push origin main
 5. **DPI Invariant:** Kerapatan layar tablet tetap terkunci di **205 DPI** (`Physical: 280`, `Override: 205`, `1200x1920`).
 
 ---
+
+## 📌 Update 14 November 2026 — TurboBooster v2.0.5 (Full Rust Daemon Fat LTO & Android AOT Speed Compilation)
+
+1. **Rust Daemon Max Native Performance (`turbodaemon`):**
+   - Dioptimalkan ke profile release tertinggi di `Cargo.toml`: `opt-level = 3` dan `lto = "fat"` (Full Link-Time Optimization antar-crate).
+   - Recompiled via `build_daemon.sh` (`libturbodaemon.so` 533 KB).
+   - Menghasilkan IPC socket, polling kernel PSI (`/proc/pressure/memory`), dan memory compaction yang dieksekusi langsung pada instruksi native ARM64 CPU Gold Core tanpa interpreter overhead.
+
+2. **Full System AOT Native Speed Compilation (`cmd package compile -m speed -f`):**
+   - Seluruh dex/kotlin/java bytecode dikonversi permanen menjadi file native `.odex`/`.vdex` ARM64 (mengeliminasi kompilasi JIT runtime di CPU Silver 0-3):
+     - `android` (Framework-res & SystemServer) -> **Success**
+     - `com.android.systemui` -> **Success**
+     - `com.miui.home` (Launcher & gestures) -> **Success**
+     - `com.google.android.inputmethod.latin` (Gboard) -> **Success**
+     - `com.android.settings` -> **Success**
+     - `com.google.android.webview` -> **Success**
+     - `com.android.chrome` -> **Success**
+     - `com.facebook.katana` -> **Success**
+     - `com.instagram.android` -> **Success**
+     - `com.ss.android.ugc.trill` (TikTok) -> **Success**
+     - `com.whatsapp` -> **Success**
+     - `com.lemon.lvoverseas` (CapCut Global) -> **Success**
+     - `com.artcraft.wordcraft` -> **Success**
+     - `com.artcraft.figcraft` -> **Success**
+     - `com.tokopedia.tkpd` -> **Success**
+     - `com.shopee.id` -> **Success**
+     - `com.spotify.music` -> **Success**
+     - `com.arya.turbobooster` -> **Success**
+   - Repinned memory buffer framework: `cmd pinner repin`.
+   - Discard & TRIM storage flash block eMMC 5.1: `sm fstrim`.
+
+3. **Custom ROM Snappiness & Touch Tuning:**
+   - Window, transition, & animator scale diset ke `0.50x` untuk respon instan khas lightweight Custom ROM (LineageOS/AOSP).
+   - Touch response speed `1` & touch gesture speed `2`.
+   - Window blurs & MIUI home blur disabled (`0`) untuk membebaskan fillrate Adreno 610 GPU.
+
+4. **Kerapatan Layar (DPI Invariant):**
+   - Kerapatan layar tablet tetap terkunci aman di **205 DPI** (`Physical: 280`, `Override: 205`, `1200x1920`).
+
+---
 *Catatan ini dibuat secara otomatis dan komprehensif sebagai single source of truth untuk seluruh sesi pengerjaan Redmi Pad SE & Android Craft Suite.*
