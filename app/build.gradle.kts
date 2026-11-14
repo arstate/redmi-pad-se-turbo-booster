@@ -11,8 +11,8 @@ android {
         applicationId = "com.arya.turbobooster"
         minSdk = 26
         targetSdk = 35
-        versionCode = 18
-        versionName = "2.1.2"
+        versionCode = 19
+        versionName = "2.1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

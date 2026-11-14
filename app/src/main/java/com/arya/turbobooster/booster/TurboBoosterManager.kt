@@ -107,7 +107,8 @@ object TurboBoosterManager {
         "com.google.android.deskclock",
         "com.android.deskclock",
         "free.vpn.unblock.proxy.vpnmaster",
-        "com.vpn.free.hotspot.secure.vpnify"
+        "com.vpn.free.hotspot.secure.vpnify",
+        "com.roblox.client"
     )
 
     // Target Games and Creators
@@ -131,12 +132,11 @@ object TurboBoosterManager {
         "com.arya.turbobooster"
     )
 
-    // Non-essential tracing/logging daemons safe to stop via MQSAS Call 21
+    // Non-essential tracing/logging daemons safe to stop via MQSAS Call 21 (statsd kept alive for IPC/GMS/Roblox bind)
     val TRACING_DAEMONS = listOf(
         "heapprofd",
         "incidentd",
         "mobile_log_d",
-        "statsd",
         "traced",
         "traced_perf",
         "traced_probes",
@@ -475,6 +475,16 @@ object TurboBoosterManager {
             runStep("dumpsys deviceidle whitelist +$cPkg", "CapCut DeviceIdle Whitelist", onLog)
         }
 
+        // Roblox & Gaming Immortality (Prevent AppOps/caging lockouts and ensure native resolution 90Hz)
+        runStep("cmd appops set com.roblox.client RUN_IN_BACKGROUND allow", "Roblox Background -> ALLOW", onLog)
+        runStep("cmd appops set com.roblox.client RUN_ANY_IN_BACKGROUND allow", "Roblox Run Any BG -> ALLOW", onLog)
+        runStep("cmd appops set com.roblox.client 10008 allow 2>/dev/null || true", "Roblox Autostart (10008) -> ALLOW", onLog)
+        runStep("cmd appops set com.roblox.client WAKE_LOCK allow 2>/dev/null || true", "Roblox WakeLock -> ALLOW", onLog)
+        runStep("dumpsys deviceidle whitelist +com.roblox.client", "Roblox DeviceIdle Whitelist", onLog)
+        runStep("cmd game reset com.roblox.client 2>/dev/null || true", "Reset Roblox Scaling (Protect Native)", onLog)
+        runStep("device_config delete game_overlay com.roblox.client 2>/dev/null || true", "Delete Roblox Game Overlay", onLog)
+        runStep("cmd game set --fps 90 com.roblox.client 2>/dev/null || true", "Set Roblox 90 FPS (Native Res)", onLog)
+
         // Trimming and repin
         runStep("cmd pinner repin 2>/dev/null || true", "Pinner Repin Core Buffers", onLog)
         runStep("sm fstrim", "Trim eMMC 5.1 Flash Storage", onLog)
@@ -512,8 +522,20 @@ object TurboBoosterManager {
 
         // Apply Game Resolution Downscaling (0.80x) & 90FPS overlay
         for ((pkg, name) in TARGET_GAMES) {
-            if (pkg == "com.lemon.lvoverseas" || pkg == "com.lemon.ccpadpro" || pkg == "com.mobile.legends") {
-                continue // Protect video editor and MLBB Unity engine from EGL crash
+            if (pkg == "com.lemon.lvoverseas" || pkg == "com.lemon.ccpadpro" || pkg == "com.mobile.legends" || pkg == "com.roblox.client") {
+                if (pkg == "com.roblox.client") {
+                    // Roblox crashes if downscaled (HyperOS DownscaleCloudData NPE). Keep native resolution, force 90FPS & VIP.
+                    runStep("cmd miui.downscale remove-debug-app $pkg 2>/dev/null || true", "Remove Downscale Debug ($name)", onLog)
+                    runStep("cmd game reset $pkg 2>/dev/null || true", "Reset Scaling ($name)", onLog)
+                    runStep("device_config delete game_overlay $pkg 2>/dev/null || true", "Delete Game Overlay ($name)", onLog)
+                    runStep("cmd game set --fps 90 $pkg", "Set 90FPS ($name - Native Res)", onLog)
+                    runStep("cmd tare set-vip 0 $pkg true 2>/dev/null || true", "TARE Set VIP True ($name)", onLog)
+                    runStep("cmd appops set $pkg RUN_IN_BACKGROUND allow 2>/dev/null || true", "Allow $name BG AppOps", onLog)
+                    runStep("cmd appops set $pkg RUN_ANY_IN_BACKGROUND allow 2>/dev/null || true", "Allow $name Run Any BG", onLog)
+                    runStep("cmd appops set $pkg 10008 allow 2>/dev/null || true", "Allow $name Autostart", onLog)
+                    runStep("dumpsys deviceidle whitelist +$pkg 2>/dev/null || true", "$name DeviceIdle Whitelist", onLog)
+                }
+                continue // Protect video editor, MLBB Unity engine, and Roblox from HyperOS downscale NPE crash
             }
             runStep("cmd game set --downscale 0.8 $pkg", "Downscale 0.8x ($name)", onLog)
             runStep("cmd miui.downscale add-debug-app $pkg 0.8 2>/dev/null || true", "HyperOS Downscale 0.8x ($name)", onLog)
@@ -578,8 +600,11 @@ object TurboBoosterManager {
         mqsasSetProp("persist.sys.computility.gpulevel", "0", "Reset Computility GPU Level -> 0", onLog)
 
         // Reset Games
+        runStep("cmd miui.downscale clear-debug-apps 2>/dev/null || true", "Clear HyperOS Downscale Apps", onLog)
+        runStep("cmd miui.downscale disable-downscale true 2>/dev/null || true", "Disable HyperOS Downscale", onLog)
         for ((pkg, name) in TARGET_GAMES) {
             runStep("cmd game reset $pkg 2>/dev/null || true", "Reset Scaling ($name)", onLog)
+            runStep("device_config delete game_overlay $pkg 2>/dev/null || true", "Delete Game Overlay ($name)", onLog)
             runStep("cmd tare set-vip 0 $pkg false 2>/dev/null || true", "Reset TARE VIP ($name)", onLog)
         }
 

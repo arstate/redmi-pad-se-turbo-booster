@@ -210,8 +210,11 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 appendLog("--- Applying 0.8x Native Game Downscaling ---")
                 for ((pkg, name) in TurboBoosterManager.TARGET_GAMES) {
-                    if (pkg == "com.lemon.lvoverseas" || pkg == "com.lemon.ccpadpro" || pkg == "com.mobile.legends") {
-                        continue // Prevent EGL crash on video editor & MLBB Unity engine
+                    if (pkg == "com.lemon.lvoverseas" || pkg == "com.lemon.ccpadpro" || pkg == "com.mobile.legends" || pkg == "com.roblox.client") {
+                        if (pkg == "com.roblox.client") {
+                            ShellExecutor.execute("cmd game set --fps 90 com.roblox.client", requirePrivileged = true)
+                        }
+                        continue // Prevent EGL / DownscaleCloudData crash on video editor, MLBB & Roblox
                     }
                     val r1 = ShellExecutor.execute("cmd game set --downscale 0.8 $pkg", requirePrivileged = true)
                     val r2 = ShellExecutor.execute("cmd miui.downscale add-debug-app $pkg 0.8", requirePrivileged = true)

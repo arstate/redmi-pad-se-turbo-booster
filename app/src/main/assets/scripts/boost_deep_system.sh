@@ -55,6 +55,17 @@ cmd miui.downscale disable-downscale false
 cmd miui.downscale set-debug-mode true
 GAMES="com.tencent.ig com.mobile.legends com.roblox.client com.mojang.minecraftpe"
 for PKG in $GAMES; do
+    if [ "$PKG" = "com.mobile.legends" ] || [ "$PKG" = "com.roblox.client" ]; then
+        cmd miui.downscale remove-debug-app $PKG 2>/dev/null
+        cmd game reset $PKG 2>/dev/null
+        cmd game set --fps 90 $PKG 2>/dev/null
+        dumpsys deviceidle whitelist +$PKG 2>/dev/null
+        cmd appops set $PKG RUN_IN_BACKGROUND allow 2>/dev/null
+        cmd appops set $PKG RUN_ANY_IN_BACKGROUND allow 2>/dev/null
+        cmd appops set $PKG 10008 allow 2>/dev/null
+        am set-standby-bucket $PKG active 2>/dev/null
+        continue # Protect MLBB Unity engine and Roblox from downscale crash
+    fi
     cmd miui.downscale add-debug-app $PKG 0.7 2>/dev/null
     cmd game mode 2 $PKG 2>/dev/null
     dumpsys deviceidle whitelist +$PKG 2>/dev/null

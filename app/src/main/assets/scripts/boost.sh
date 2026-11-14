@@ -124,8 +124,8 @@ device_config put window_manager com.android.window.flags.show_desktop_windowing
 
 # 6. HyperOS Turbo Sched, GPU Driver, Game OOM Shield & SurfaceFlinger Anti-Jank
 settings put global updatable_driver_production_opt_out_apps ""
-settings put global updatable_driver_production_opt_in_apps "com.mobile.legends,com.tencent.ig,com.roblox.client,com.mojang.minecraftpe,com.wejoy.weplay,com.android.chrome"
-settings put global updatable_driver_prerelease_opt_in_apps "com.mobile.legends,com.tencent.ig,com.roblox.client,com.mojang.minecraftpe"
+settings put global updatable_driver_production_opt_in_apps "com.mobile.legends,com.tencent.ig,com.mojang.minecraftpe,com.wejoy.weplay,com.android.chrome"
+settings put global updatable_driver_prerelease_opt_in_apps "com.mobile.legends,com.tencent.ig,com.mojang.minecraftpe"
 settings put global game_driver_all_apps 1
 settings put global updatable_driver_all_apps 1
 
@@ -200,6 +200,14 @@ device_config put activity_manager use_compaction true
 cmd appops set com.mobile.legends READ_EXTERNAL_STORAGE allow 2>/dev/null || true
 cmd appops set com.mobile.legends WRITE_EXTERNAL_STORAGE allow 2>/dev/null || true
 cmd appops set com.mobile.legends MANAGE_EXTERNAL_STORAGE allow 2>/dev/null || true
+
+# Roblox Immortality (Allow Autostart, WakeLock & Background)
+cmd appops set com.roblox.client RUN_IN_BACKGROUND allow 2>/dev/null || true
+cmd appops set com.roblox.client RUN_ANY_IN_BACKGROUND allow 2>/dev/null || true
+cmd appops set com.roblox.client 10008 allow 2>/dev/null || true
+cmd appops set com.roblox.client WAKE_LOCK allow 2>/dev/null || true
+cmd game reset com.roblox.client 2>/dev/null || true
+cmd game set --fps 90 com.roblox.client 2>/dev/null || true
 
 # CapCut Media & Storage AppOps
 for c_pkg in com.lemon.lvoverseas com.lemon.ccpadpro; do

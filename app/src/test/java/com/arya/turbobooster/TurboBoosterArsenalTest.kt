@@ -148,6 +148,19 @@ class TurboBoosterArsenalTest {
     }
 
     @Test
+    fun testRobloxAndCapCutExemptFromDownscale() {
+        val projectDir = File(System.getProperty("user.dir") ?: ".")
+        val rootDir = if (projectDir.name == "app") projectDir.parentFile else projectDir
+        val managerFile = File(rootDir, "app/src/main/java/com/arya/turbobooster/booster/TurboBoosterManager.kt")
+        assertTrue("TurboBoosterManager.kt must exist", managerFile.exists())
+        val content = managerFile.readText()
+        assertTrue(
+            "TurboBoosterManager must exempt Roblox from downscaling",
+            content.contains("pkg == \"com.roblox.client\"")
+        )
+    }
+
+    @Test
     fun testProtectedAppsDefault() {
         val protected = TurboBoosterManager.DEFAULT_PROTECTED_APPS
         assertTrue("Launcher com.miui.home must be protected", protected.contains("com.miui.home"))

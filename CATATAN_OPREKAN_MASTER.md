@@ -583,4 +583,38 @@ Berdasarkan investigasi menyeluruh melalui `dumpsys activity exit-info com.miui.
 - **Invarian Layar (Strict 205 DPI)**: Kerapatan layar tablet tetap terkunci aman di **205 DPI** (`Physical: 280`, `Override: 205`, `1200x1920`).
 
 ---
+
+## 12. Update v2.1.3: Perbaikan Crash Roblox & Bypass HyperOS Downscale NPE
+
+### 1. Root Cause Analysis Crash Roblox:
+1. **HyperOS 2.0 Tablet Window Downscale NullPointerException**:
+   - Saat Roblox dimasukkan ke dalam daftar debug app downscale (`cmd miui.downscale add-debug-app com.roblox.client 0.7/0.8`), `ActivityManagerService.attachApplicationLocked` memanggil `CompatModePackages.getCompatScaleFromProvider()` -> `MiuiDownscaleController.getCompatScale()` -> `DownscaleCloudRule.isTabletNormalEnable()`.
+   - Di `DownscaleCloudRule.java` line 121, pemanggilan `DownscaleCloudData.getDeviceItem()` dilakukan pada referensi objek yang bernilai `null` (karena data cloud Xiaomi belum diunduh/kosong pada tablet rootless).
+   - Hal ini memicu `NullPointerException` di thread `system_server`, merusak `IWindowSession`, dan menyebabkan AMS mengirim sinyal 9 (`kill -9`) saat proses Roblox sedang mengikat (`reason=7 INITIALIZATION FAILURE description=error during bind`).
+2. **Ketergantungan IPC pada `statsd`**:
+   - Library native C++ milik Google Play Services dan engine Roblox melakukan pemanggilan blocking ke AIDL service `stats` (`ServiceManagerCppClient: Waited one second for stats`).
+   - Ketika daemon `statsd` dimatikan oleh skrip tracing lama via MQSAS Call 21, proses Roblox mengalami timeout dan gagal melakukan inisialisasi bind.
+
+### 2. Solusi & Implementasi Teknis (v2.1.3):
+1. **Eksklusi Mutlak Roblox dari Sistem Downscaling**:
+   - Di `TurboBoosterManager.kt`, `MainActivity.kt`, dan `boost_deep_system.sh`, `com.roblox.client` resmi dieksklusi dari pemanggilan `cmd miui.downscale add-debug-app` dan `game_overlay`.
+   - Menambahkan perintah pembersihan otomatis: `cmd miui.downscale remove-debug-app com.roblox.client`, `cmd game reset com.roblox.client`, dan `device_config delete game_overlay com.roblox.client`.
+2. **Konfigurasi Native 90 FPS & TARE VIP**:
+   - Mengunci frame rate Roblox langsung di 90 FPS native: `cmd game set --fps 90 com.roblox.client`.
+   - Memberikan prioritas VIP Task Attribution & Resource Execution (TARE): `cmd tare set-vip 0 com.roblox.client true`.
+3. **Imunitas AppOps & Standby Bucket**:
+   - Memberikan izin penuh background execution:
+     * `cmd appops set com.roblox.client RUN_IN_BACKGROUND allow`
+     * `cmd appops set com.roblox.client RUN_ANY_IN_BACKGROUND allow`
+     * `cmd appops set com.roblox.client 10008 allow`
+     * `cmd appops set com.roblox.client WAKE_LOCK allow`
+     * `dumpsys deviceidle whitelist +com.roblox.client`
+     * `am set-standby-bucket com.roblox.client active`
+   - Memasukkan `com.roblox.client` ke dalam `DEFAULT_PROTECTED_APPS`.
+4. **Proteksi Daemon `statsd`**:
+   - Menghapus `"statsd"` dari `TRACING_DAEMONS` di `TurboBoosterManager.kt` agar IPC stats service tetap aktif melayani thread Google/Roblox.
+5. **Verifikasi Live**:
+   - Roblox berhasil dibuka dari cold start (`com.roblox.client/.ActivityNativeMain`), PID aktif, dan login terverifikasi lancar tanpa force close.
+
+---
 *Catatan ini dibuat secara otomatis dan komprehensif sebagai single source of truth untuk seluruh sesi pengerjaan Redmi Pad SE & Android Craft Suite.*
