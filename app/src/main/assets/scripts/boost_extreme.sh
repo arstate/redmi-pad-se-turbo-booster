@@ -69,12 +69,13 @@ settings put global window_animation_scale 0.25
 settings put global transition_animation_scale 0.25
 settings put global animator_duration_scale 0.25
 
-echo "=== [7/6] SPEED-AOT COMPILATION (ROBLOX, PUBG, MINECRAFT) ==="
-for pkg in com.roblox.client com.tencent.ig com.mojang.minecraftpe ph.spacedesk.beta; do
+echo "=== [7/6] SPEED-AOT COMPILATION (PUBG, MINECRAFT) ==="
+for pkg in com.tencent.ig com.mojang.minecraftpe ph.spacedesk.beta; do
   cmd package compile -m speed -f "$pkg" 2>/dev/null &
 done
-for capcut_pkg in com.lemon.lvoverseas com.lemon.ccpadpro; do
-  cmd package compile -m speed-profile "$capcut_pkg" 2>/dev/null &
+# Protect Roblox and CapCut with speed-profile (prevent split-APK dexopt corruption)
+for profile_pkg in com.roblox.client com.lemon.lvoverseas com.lemon.ccpadpro; do
+  cmd package compile -m speed-profile "$profile_pkg" 2>/dev/null &
 done
 
 echo "=== BOOST EXTREME APPLIED! ==="

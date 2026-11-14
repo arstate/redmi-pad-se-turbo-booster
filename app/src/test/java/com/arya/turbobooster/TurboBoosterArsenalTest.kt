@@ -170,6 +170,24 @@ class TurboBoosterArsenalTest {
         assertTrue("WhatsApp must be in default protected apps", protected.contains("com.whatsapp"))
         assertTrue("Telegram must be in default protected apps", protected.contains("org.telegram.messenger"))
         assertTrue("Discord must be in default protected apps", protected.contains("com.discord"))
+        assertTrue("Roblox com.roblox.client must be in default protected apps", protected.contains("com.roblox.client"))
+    }
+
+    @Test
+    fun testTurbodaemonProtectsRoblox() {
+        val projectDir = File(System.getProperty("user.dir") ?: ".")
+        val rootDir = if (projectDir.name == "app") projectDir.parentFile else projectDir
+        val rustFile = File(rootDir, "turbodaemon/src/main.rs")
+        assertTrue("turbodaemon/src/main.rs must exist", rustFile.exists())
+        val content = rustFile.readText()
+        assertTrue(
+            "turbodaemon DaemonState must protect com.roblox.client",
+            content.contains("protected.insert(\"com.roblox.client\".to_string())")
+        )
+        assertTrue(
+            "turbodaemon target_games must include com.roblox.client",
+            content.contains("\"com.roblox.client\"")
+        )
     }
 
     @Test

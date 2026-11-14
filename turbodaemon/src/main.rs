@@ -68,6 +68,7 @@ impl DaemonState {
         protected.insert("com.vpn.free.hotspot.secure.vpnify".to_string());
         protected.insert("com.google.android.deskclock".to_string());
         protected.insert("com.android.deskclock".to_string());
+        protected.insert("com.roblox.client".to_string());
 
         DaemonState {
             profile: Profile::FlagshipBalanced,

@@ -481,6 +481,8 @@ object TurboBoosterManager {
         runStep("cmd appops set com.roblox.client 10008 allow 2>/dev/null || true", "Roblox Autostart (10008) -> ALLOW", onLog)
         runStep("cmd appops set com.roblox.client WAKE_LOCK allow 2>/dev/null || true", "Roblox WakeLock -> ALLOW", onLog)
         runStep("dumpsys deviceidle whitelist +com.roblox.client", "Roblox DeviceIdle Whitelist", onLog)
+        runStep("am set-standby-bucket com.roblox.client active 2>/dev/null || true", "Roblox Standby Bucket -> ACTIVE", onLog)
+        runStep("cmd miui.downscale remove-debug-app com.roblox.client 2>/dev/null || true", "Remove Roblox Downscale Debug", onLog)
         runStep("cmd game reset com.roblox.client 2>/dev/null || true", "Reset Roblox Scaling (Protect Native)", onLog)
         runStep("device_config delete game_overlay com.roblox.client 2>/dev/null || true", "Delete Roblox Game Overlay", onLog)
         runStep("cmd game set --fps 90 com.roblox.client 2>/dev/null || true", "Set Roblox 90 FPS (Native Res)", onLog)
@@ -533,7 +535,9 @@ object TurboBoosterManager {
                     runStep("cmd appops set $pkg RUN_IN_BACKGROUND allow 2>/dev/null || true", "Allow $name BG AppOps", onLog)
                     runStep("cmd appops set $pkg RUN_ANY_IN_BACKGROUND allow 2>/dev/null || true", "Allow $name Run Any BG", onLog)
                     runStep("cmd appops set $pkg 10008 allow 2>/dev/null || true", "Allow $name Autostart", onLog)
+                    runStep("cmd appops set $pkg WAKE_LOCK allow 2>/dev/null || true", "Allow $name WakeLock", onLog)
                     runStep("dumpsys deviceidle whitelist +$pkg 2>/dev/null || true", "$name DeviceIdle Whitelist", onLog)
+                    runStep("am set-standby-bucket $pkg active 2>/dev/null || true", "Set $name Standby Bucket -> ACTIVE", onLog)
                 }
                 continue // Protect video editor, MLBB Unity engine, and Roblox from HyperOS downscale NPE crash
             }

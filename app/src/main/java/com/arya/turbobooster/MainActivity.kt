@@ -212,7 +212,11 @@ class MainActivity : AppCompatActivity() {
                 for ((pkg, name) in TurboBoosterManager.TARGET_GAMES) {
                     if (pkg == "com.lemon.lvoverseas" || pkg == "com.lemon.ccpadpro" || pkg == "com.mobile.legends" || pkg == "com.roblox.client") {
                         if (pkg == "com.roblox.client") {
-                            ShellExecutor.execute("cmd game set --fps 90 com.roblox.client", requirePrivileged = true)
+                            ShellExecutor.execute("cmd miui.downscale remove-debug-app com.roblox.client 2>/dev/null || true", requirePrivileged = true)
+                            ShellExecutor.execute("device_config delete game_overlay com.roblox.client 2>/dev/null || true", requirePrivileged = true)
+                            ShellExecutor.execute("cmd game reset com.roblox.client 2>/dev/null || true", requirePrivileged = true)
+                            ShellExecutor.execute("cmd game set --fps 90 com.roblox.client 2>/dev/null || true", requirePrivileged = true)
+                            appendLog("[$name] Protected: Native Res 90FPS applied, Downscale bypassed")
                         }
                         continue // Prevent EGL / DownscaleCloudData crash on video editor, MLBB & Roblox
                     }

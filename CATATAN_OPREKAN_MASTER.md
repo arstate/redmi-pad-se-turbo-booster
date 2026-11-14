@@ -617,4 +617,34 @@ Berdasarkan investigasi menyeluruh melalui `dumpsys activity exit-info com.miui.
    - Roblox berhasil dibuka dari cold start (`com.roblox.client/.ActivityNativeMain`), PID aktif, dan login terverifikasi lancar tanpa force close.
 
 ---
+
+## 13. Update v2.1.4: Hardening Ekosistem Roblox & Sinkronisasi Turbodaemon Rust
+
+### 1. Temuan Celah & Evaluasi Kritis Review:
+1. **Oposisi Turbodaemon Rust (`turbodaemon/src/main.rs`)**:
+   - `com.roblox.client` belum dimasukkan ke dalam `DaemonState::new()` `protected` set pada daemon native Rust. Jika mode profil daemon aktif, package Roblox berpotensi tidak mendapatkan status protected penuh.
+2. **Asimetri Standby Bucket di `TurboBoosterManager.kt`**:
+   - Perintah `am set-standby-bucket com.roblox.client active` dan `cmd miui.downscale remove-debug-app` belum terdaftar pada blok profil utama `EXTREME_GAMING_RENDER` di Kotlin.
+3. **Celah Pembersihan di UI `MainActivity.kt`**:
+   - Tombol manual `btnDownscaleGames` hanya memanggil `cmd game set --fps 90`, tanpa membersihkan residu debug app `cmd miui.downscale remove-debug-app` jika sebelumnya pernah terpasang.
+4. **Risiko AOT Speed-Force di `boost_extreme.sh`**:
+   - Pemanggilan `cmd package compile -m speed -f com.roblox.client` berisiko merusak integrasi split-APK dan engine Luau Roblox saat kompilasi berjalan di latar belakang.
+
+### 2. Solusi & Perbaikan Menyeluruh (v2.1.4):
+1. **Rust Turbodaemon Hardening**:
+   - Menambahkan `protected.insert("com.roblox.client".to_string())` pada `turbodaemon/src/main.rs`.
+   - Mengompilasi ulang biner `libturbodaemon.so` menggunakan `build_daemon.sh` (NDK r27b, `aarch64-linux-android`) dan menyinkronkan ke `app/src/main/jniLibs/arm64-v8a/libturbodaemon.so`.
+2. **Sinkronisasi Lengkap Kotlin & Script**:
+   - Menambahkan `am set-standby-bucket com.roblox.client active` dan `cmd miui.downscale remove-debug-app com.roblox.client` pada `TurboBoosterManager.kt` (baik blok Gaming Immortality maupun loop `TARGET_GAMES`).
+   - Menyempurnakan `MainActivity.kt` (`btnDownscaleGames`) untuk membersihkan `miui.downscale` dan `game_overlay` sebelum menetapkan 90 FPS.
+   - Mengubah kompilasi Roblox di `boost_extreme.sh` menjadi `-m speed-profile` (identik dengan proteksi CapCut).
+   - Melengkapi `boost.sh` dengan imunitas standby bucket dan pembersihan overlay.
+3. **Penyempurnaan Unit Test**:
+   - Menambahkan assertion `com.roblox.client` di `testProtectedAppsDefault()`.
+   - Menambahkan `testTurbodaemonProtectsRoblox()` untuk memverifikasi file Rust `turbodaemon/src/main.rs`.
+4. **Verifikasi Build**:
+   - Seluruh 52 test suite Gradle lulus (`BUILD SUCCESSFUL`).
+   - Binary production release APK (`release/TurboBooster.apk`) terbangun di 2.1 MB (< batas 3.5 MB).
+
+---
 *Catatan ini dibuat secara otomatis dan komprehensif sebagai single source of truth untuk seluruh sesi pengerjaan Redmi Pad SE & Android Craft Suite.*

@@ -201,11 +201,15 @@ cmd appops set com.mobile.legends READ_EXTERNAL_STORAGE allow 2>/dev/null || tru
 cmd appops set com.mobile.legends WRITE_EXTERNAL_STORAGE allow 2>/dev/null || true
 cmd appops set com.mobile.legends MANAGE_EXTERNAL_STORAGE allow 2>/dev/null || true
 
-# Roblox Immortality (Allow Autostart, WakeLock & Background)
+# Roblox Immortality (Allow Autostart, WakeLock, Background, Whitelist & Native 90FPS)
 cmd appops set com.roblox.client RUN_IN_BACKGROUND allow 2>/dev/null || true
 cmd appops set com.roblox.client RUN_ANY_IN_BACKGROUND allow 2>/dev/null || true
 cmd appops set com.roblox.client 10008 allow 2>/dev/null || true
 cmd appops set com.roblox.client WAKE_LOCK allow 2>/dev/null || true
+dumpsys deviceidle whitelist +com.roblox.client 2>/dev/null || true
+am set-standby-bucket com.roblox.client active 2>/dev/null || true
+cmd miui.downscale remove-debug-app com.roblox.client 2>/dev/null || true
+device_config delete game_overlay com.roblox.client 2>/dev/null || true
 cmd game reset com.roblox.client 2>/dev/null || true
 cmd game set --fps 90 com.roblox.client 2>/dev/null || true
 
