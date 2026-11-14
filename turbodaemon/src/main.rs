@@ -52,6 +52,11 @@ struct DaemonState {
 impl DaemonState {
     fn new(token: String) -> Self {
         let mut protected = HashSet::new();
+        protected.insert("com.miui.home".to_string());
+        protected.insert("com.android.systemui".to_string());
+        protected.insert("com.miui.securitycenter".to_string());
+        protected.insert("com.google.android.gms".to_string());
+        protected.insert("com.arya.turbobooster".to_string());
         protected.insert("com.whatsapp".to_string());
         protected.insert("com.whatsapp.w4b".to_string());
         protected.insert("org.telegram.messenger".to_string());
@@ -275,6 +280,40 @@ fn main() {
 
                 // Device level left untouched to avoid triggering com.miui.home launcher crash
 
+                // Anti-Launcher-Kill & Stability Guard
+                let (_, heaviest) = run_cmd("/system/bin/device_config", &["get", "lmkd_native", "kill_heaviest_task"]);
+                if heaviest.trim() != "false" {
+                    run_cmd("/system/bin/device_config", &["override", "lmkd_native", "kill_heaviest_task", "false"]);
+                }
+
+                let (_, cached) = run_cmd("/system/bin/device_config", &["get", "activity_manager", "max_cached_processes"]);
+                if cached.trim() != "24" {
+                    run_cmd("/system/bin/device_config", &["put", "activity_manager", "max_cached_processes", "24"]);
+                }
+
+                // Guard SmoothCorner properties to false (Fixes SIGSEGV in libhwui SmoothCorner::clipSmoothCorner on Adreno 610)
+                let (_, sc_win) = run_cmd("/system/bin/getprop", &["persist.sys.support_window_smoothcorner"]);
+                if sc_win.trim() != "false" {
+                    mqsas_setprop("persist.sys.support_window_smoothcorner", "false");
+                }
+                let (_, sc_view) = run_cmd("/system/bin/getprop", &["persist.sys.support_view_smoothcorner"]);
+                if sc_view.trim() != "false" {
+                    mqsas_setprop("persist.sys.support_view_smoothcorner", "false");
+                }
+
+                // Guard MMS kill_fas_cached_idle to false
+                let (_, kf) = run_cmd("/system/bin/getprop", &["persist.sys.mms.kill_fas_cached_idle"]);
+                if kf.trim() != "false" {
+                    mqsas_setprop("persist.sys.mms.kill_fas_cached_idle", "false");
+                }
+
+                // Protect com.miui.home and SystemUI from being killed or restricted
+                run_cmd("/system/bin/cmd", &["activity", "set-bg-restriction-level", "--user", "0", "com.miui.home", "exempted"]);
+                run_cmd("/system/bin/am", &["set-standby-bucket", "com.miui.home", "active"]);
+                run_cmd("/system/bin/device_config", &["put", "system_performance", "com.android.server.flags.skip_home_art_pins", "false"]);
+                run_cmd("/system/bin/dumpsys", &["deviceidle", "whitelist", "+com.miui.home"]);
+                run_cmd("/system/bin/dumpsys", &["deviceidle", "whitelist", "+com.android.systemui"]);
+
                 // Check Cgroup v2 Freezer
                 let (_, freezer) = run_cmd("/system/bin/device_config", &["get", "activity_manager_native_boot", "use_freezer"]);
                 if freezer.trim() != "true" {
@@ -313,12 +352,9 @@ fn main() {
             let awake = is_screen_awake();
             let mut st = state_reclaim.lock().unwrap();
 
-            // Detect screen-off transition: gentle compaction without thrashing active Page Cache
+            // Detect screen-off transition
             if st.screen_is_on && !awake {
                 st.screen_is_on = false;
-                if st.profile != Profile::Stock {
-                    run_cmd("/system/bin/cmd", &["activity", "compact", "system"]);
-                }
             } else if !st.screen_is_on && awake {
                 st.screen_is_on = true;
             }
@@ -437,7 +473,6 @@ fn main() {
                                 )
                             }
                             "TRIGGER_RECLAIM" => {
-                                run_cmd("/system/bin/cmd", &["activity", "compact", "system"]);
                                 run_cmd("/system/bin/sm", &["fstrim"]);
                                 "OK reclaimed\n".to_string()
                             }

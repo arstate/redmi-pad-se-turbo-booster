@@ -97,7 +97,7 @@ echo "[6/7] Menjalankan UFS FSTRIM & Maintenance Idle..."
 sm fstrim
 cmd activity idle-maintenance
 pm trim-caches 999G 2>/dev/null || true
-cmd activity compact system
+# Anti-thrashing: Do not compact system / launcher heap
 
 # ==============================================================================
 # Kategori 7: Status Verifikasi

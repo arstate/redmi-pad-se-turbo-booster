@@ -25,15 +25,26 @@ settings put system peak_refresh_rate 90.0
 settings put global thermal_limit_refresh_rate 0
 settings put system thermal_limit_refresh_rate 0
 
-echo "=== [3/6] RAM 4GB RE-TUNING (FIX ZRAM THRASHING) ==="
-# Batasi cached processes agar tidak swap thrashing di 4GB RAM
-device_config put activity_manager max_cached_processes 20
-device_config put activity_manager prodev_max_cached_processes 20
+echo "=== [3/6] RAM 4GB RE-TUNING (ANTI-LAUNCHER-KILL) ==="
+device_config put activity_manager max_cached_processes 24
+device_config put activity_manager prodev_max_cached_processes 24
 device_config put activity_manager use_compaction true
 device_config put lmk_native_boot thrashing_limit 30
 device_config put lmk_native_boot swap_util_max 80
 device_config put lmk_native_boot kill_timeout_ms 50
-device_config put lmkd_native kill_heaviest_task true
+device_config override lmkd_native kill_heaviest_task false
+device_config delete lmkd_native kill_heaviest_task 2>/dev/null || true
+
+# Explicit Home Launcher & SystemUI Immunity
+cmd activity set-bg-restriction-level --user 0 com.miui.home exempted 2>/dev/null || true
+am set-standby-bucket com.miui.home active 2>/dev/null || true
+cmd appops set com.miui.home RUN_IN_BACKGROUND allow 2>/dev/null || true
+cmd appops set com.miui.home RUN_ANY_IN_BACKGROUND allow 2>/dev/null || true
+dumpsys deviceidle whitelist +com.miui.home 2>/dev/null || true
+dumpsys deviceidle whitelist +com.android.systemui 2>/dev/null || true
+device_config put system_performance com.android.server.flags.skip_home_art_pins false 2>/dev/null || true
+device_config put system_performance com.android.server.flags.pin_webview true 2>/dev/null || true
+cmd pinner repin 2>/dev/null || true
 
 echo "=== [4/6] CRIPPLE THROTTLER & BACKGROUND LEECHES ==="
 # Blokir Powerkeeper & Android System Intelligence latar belakang

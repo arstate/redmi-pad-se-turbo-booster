@@ -17,11 +17,11 @@ cmd device_config put storage_native_boot smart_idle_maint_enabled true
 sm idle-maint run 2>/dev/null || true
 sm fstrim 2>/dev/null || true
 
-echo '[4/7] Manajemen RAM 4GB (Anti-Trim, Cached 16 & ZRAM Compaction)...'
+echo '[4/7] Manajemen RAM 4GB (Anti-Trim, Cached 24 & ZRAM Compaction)...'
 cmd activity memory-factor set NORMAL
-cmd device_config put activity_manager max_cached_processes 16
+cmd device_config put activity_manager max_cached_processes 24
 cmd device_config put activity_manager_native_boot modern_queue_enabled true
-settings put global activity_manager_constants 'max_cached_processes=16,low_swap_threshold_percent=0.8,max_phantom_processes=32'
+settings put global activity_manager_constants 'max_cached_processes=24,low_swap_threshold_percent=0.8,max_phantom_processes=32'
 settings put global miui_memory_extension 0
 settings put global ram_expand_size 0
 
@@ -30,7 +30,18 @@ cmd device_config put activity_manager use_compaction true
 cmd device_config put activity_manager compact_action_1 full
 cmd device_config put activity_manager compact_action_2 full
 cmd device_config put activity_manager compact_throttle_1 5000
-cmd device_config put activity_manager compact_full_rss_throttle_kb 0
+cmd device_config put activity_manager compact_full_rss_throttle_kb 16000
+
+# Explicit Home Launcher & SystemUI Immunity
+cmd activity set-bg-restriction-level --user 0 com.miui.home exempted 2>/dev/null || true
+am set-standby-bucket com.miui.home active 2>/dev/null || true
+cmd appops set com.miui.home RUN_IN_BACKGROUND allow 2>/dev/null || true
+cmd appops set com.miui.home RUN_ANY_IN_BACKGROUND allow 2>/dev/null || true
+dumpsys deviceidle whitelist +com.miui.home 2>/dev/null || true
+dumpsys deviceidle whitelist +com.android.systemui 2>/dev/null || true
+cmd device_config put system_performance com.android.server.flags.skip_home_art_pins false 2>/dev/null || true
+cmd device_config put system_performance com.android.server.flags.pin_webview true 2>/dev/null || true
+cmd pinner repin 2>/dev/null || true
 
 # Safe Debloat Background Leeches (Free up ~800MB RAM)
 for PKG in com.google.android.apps.messaging com.milink.service com.xiaomi.aicr com.miui.aod com.android.updater com.google.android.as; do

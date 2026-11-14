@@ -4,20 +4,27 @@
 
 echo "[*] Menginjeksi Flagship Device Level & HyperOSUnf*cker Stack..."
 
-# 1. FLAGSHIP DEVICE LEVEL SPOOFING (v:1,c:3,g:1,m:2)
-# Mengubah identitas Redmi Pad SE ke c:3 (Flagship Animation Physics) tanpa GPU blur choke (g:1 Adreno 610 safe)
-settings put system deviceLevelList "v:1,c:3,g:1,m:2"
-
-# 2. MQSAS INTERNAL ROOT BACKDOOR SERVICE EXPLOIT (persist.sys.*)
-# Memanfaatkan miui.mqsas.IMQSNative (UID 0 root service) untuk optimasi CPU & Framework
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.computility.cpulevel 6" s16 "/dev/null" i32 600
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.advanced_visual_release 3" s16 "/dev/null" i32 600
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_view_smoothcorner true" s16 "/dev/null" i32 600
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_window_smoothcorner true" s16 "/dev/null" i32 600
+# 1. RESET ADVANCED VISUAL & HARDWARE SMOOTHCORNER (Fixes libhwui SIGSEGV on Adreno 610)
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.computility.cpulevel 0" s16 "/dev/null" i32 600
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.advanced_visual_release 0" s16 "/dev/null" i32 600
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_view_smoothcorner false" s16 "/dev/null" i32 600
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_window_smoothcorner false" s16 "/dev/null" i32 600
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.mms.kill_fas_cached_idle false" s16 "/dev/null" i32 600
 service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.mi_shadow_supported true" s16 "/dev/null" i32 600
 service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui.blur.enable false" s16 "/dev/null" i32 600
 service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.sf.disable_blurs 1" s16 "/dev/null" i32 600
 service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui.sf_fps 90" s16 "/dev/null" i32 600
+
+# Explicit Home Launcher & SystemUI Immunity
+cmd activity set-bg-restriction-level --user 0 com.miui.home exempted 2>/dev/null || true
+am set-standby-bucket com.miui.home active 2>/dev/null || true
+cmd appops set com.miui.home RUN_IN_BACKGROUND allow 2>/dev/null || true
+cmd appops set com.miui.home RUN_ANY_IN_BACKGROUND allow 2>/dev/null || true
+dumpsys deviceidle whitelist +com.miui.home 2>/dev/null || true
+dumpsys deviceidle whitelist +com.android.systemui 2>/dev/null || true
+device_config put system_performance com.android.server.flags.skip_home_art_pins false 2>/dev/null || true
+device_config put system_performance com.android.server.flags.pin_webview true 2>/dev/null || true
+cmd pinner repin 2>/dev/null || true
 
 # 3. MATIKAN WALLPAPER BLUR & DESKTOP GAUSSIAN BLUR SAAT SWIPE
 settings put global enable_miui_desktop_blur 0

@@ -95,6 +95,8 @@ object TurboBoosterManager {
 
     // Default Protected Apps (Excluded from heavy caging & suspension to protect notifications/alarms/VPNs)
     val DEFAULT_PROTECTED_APPS = setOf(
+        "com.miui.home",
+        "com.android.systemui",
         "com.whatsapp",
         "com.whatsapp.w4b",
         "org.telegram.messenger",
@@ -311,18 +313,25 @@ object TurboBoosterManager {
         mqsasSetProp("persist.sys.fboservice.ctrl", "true", "FBO Service Control -> TRUE", onLog)
         mqsasSetProp("persist.sys.mms.compact_enable", "true", "MMS In-RAM Compact -> TRUE", onLog)
         mqsasSetProp("persist.sys.mms.write_lmkd", "true", "MMS LMKD Synchronization -> TRUE", onLog)
-        mqsasSetProp("persist.sys.mms.kill_fas_cached_idle", "true", "MMS Kill FAS Idle -> TRUE", onLog)
+        mqsasSetProp("persist.sys.mms.kill_fas_cached_idle", "false", "MMS Kill FAS Idle -> FALSE (Protect Launcher)", onLog)
         mqsasSetProp("persist.sys.mms.bg_apps_limit", "24", "MMS Background Apps Limit -> 24", onLog)
         mqsasSetProp("persist.sys.spc.cpulimit.enabled", "true", "SPC CPU Limit -> TRUE", onLog)
         mqsasSetProp("persist.sys.smartpower.intercept.enable", "true", "SmartPower Intercept -> TRUE", onLog)
         mqsasSetProp("persist.sys.miui.adj_update_foreground_state.enable.delayMs", "3000", "ADJ FG Update Delay -> 3000ms", onLog)
+
+        // Adreno 610 libhwui Anti-Crash Guard: smoothcorner triggers null pointer dereference in clipSmoothCorner on Bengal GPU
+        mqsasSetProp("persist.sys.support_window_smoothcorner", "false", "Disable Window SmoothCorner (Anti-SIGSEGV)", onLog)
+        mqsasSetProp("persist.sys.support_view_smoothcorner", "false", "Disable View SmoothCorner (Anti-SIGSEGV)", onLog)
+        mqsasSetProp("persist.sys.advanced_visual_release", "0", "Reset Advanced Visual Release -> 0", onLog)
+        mqsasSetProp("persist.sys.computility.cpulevel", "0", "Reset Computility CPU Level -> 0", onLog)
+        mqsasSetProp("persist.sys.computility.gpulevel", "0", "Reset Computility GPU Level -> 0", onLog)
 
         // Stop Overhead Tracing/Logging Daemons
         for (daemon in TRACING_DAEMONS) {
             mqsasStopDaemon(daemon, onLog)
         }
         // Safe log trimming (NEVER stop logd!)
-        runStep("logcat -G 64K && logcat -c", "Trim Logcat Buffer to 64K", onLog)
+        runStep("logcat -G 1M", "Set Logcat Buffer to 1M", onLog)
         runStep("cmd looper_stats disable", "Disable Looper Stats Overhead", onLog)
 
         // --- LAYER 2: ANDROID 15 DEVICE_CONFIG & LMKD TUNING ---
@@ -330,7 +339,7 @@ object TurboBoosterManager {
         runStep("device_config put activity_manager_native_boot use_freezer true", "Cgroup v2 Cached Freezer -> TRUE", onLog)
         runStep("device_config put activity_manager_native_boot freeze_debounce_timeout 3000", "Freeze Debounce -> 3000ms", onLog)
         runStep("settings put global cached_apps_freezer enabled", "Global Cached Apps Freezer -> ENABLED", onLog)
-        runStep("device_config put activity_manager max_cached_processes 16", "Max Cached Processes -> 16 (4GB Sweet Spot)", onLog)
+        runStep("device_config put activity_manager max_cached_processes 24", "Max Cached Processes -> 24 (Headroom for Launcher)", onLog)
         runStep("device_config put activity_manager max_phantom_processes 128", "Max Phantom Processes -> 128", onLog)
         runStep("device_config put activity_manager use_compaction true", "Android 15 In-RAM Compaction -> TRUE", onLog)
         runStep("device_config put activity_manager compact_throttle_1 45000", "Compact Throttle 1 -> 45000ms", onLog)
@@ -338,13 +347,24 @@ object TurboBoosterManager {
         runStep("device_config put activity_manager compact_full_rss_throttle_kb 16000", "Compact Full RSS Throttle -> 16MB", onLog)
         runStep("device_config put activity_manager compact_full_delta_rss_throttle_kb 8000", "Compact Delta RSS -> 8MB", onLog)
 
-        // LMKD Heaviest-Task & Anti-Stall
-        runStep("device_config put lmkd_native kill_heaviest_task true", "LMKD: Kill Heaviest Task First -> TRUE", onLog)
+        // LMKD Standard OOM Order (Anti-Launcher-Kill: NEVER kill heaviest task first)
+        runStep("device_config override lmkd_native kill_heaviest_task false", "LMKD: Kill Heaviest Task -> FALSE", onLog)
+        runStep("device_config delete lmkd_native kill_heaviest_task", "LMKD: Delete Heaviest Task Override", onLog)
         runStep("device_config put lmkd_native psi_partial_stall_ms 60", "LMKD PSI Partial Stall -> 60ms", onLog)
         runStep("device_config put lmkd_native psi_complete_stall_ms 450", "LMKD PSI Complete Stall -> 450ms", onLog)
         runStep("device_config put lmkd_native thrashing_limit 50", "LMKD Thrashing Limit -> 50", onLog)
         runStep("device_config put lmkd_native thrashing_limit_decay 50", "LMKD Thrashing Decay -> 50", onLog)
         runStep("device_config put lmkd_native swap_free_low_percentage 15", "LMKD Swap Free Low -> 15%", onLog)
+
+        // --- LAYER 2.5: EXPLICIT HOME LAUNCHER & SYSTEMUI IMMUNITY ---
+        runStep("cmd activity set-bg-restriction-level --user 0 com.miui.home exempted", "Exempt Launcher from BG Restriction", onLog)
+        runStep("am set-standby-bucket com.miui.home active", "Launcher Standby Bucket -> ACTIVE", onLog)
+        runStep("cmd appops set com.miui.home RUN_IN_BACKGROUND allow", "Allow Launcher Background AppOps", onLog)
+        runStep("cmd appops set com.miui.home RUN_ANY_IN_BACKGROUND allow", "Allow Launcher Run Any BG AppOps", onLog)
+        runStep("dumpsys deviceidle whitelist +com.miui.home", "DeviceIdle Whitelist -> com.miui.home", onLog)
+        runStep("dumpsys deviceidle whitelist +com.android.systemui", "DeviceIdle Whitelist -> com.android.systemui", onLog)
+        runStep("device_config put system_performance com.android.server.flags.skip_home_art_pins false", "Enable Home ART Pins in Pinner", onLog)
+        runStep("device_config put system_performance com.android.server.flags.pin_webview true", "Pin WebView in Pinner", onLog)
 
         // ART Runtime & Overhead Suppression
         runStep("device_config put runtime_native_boot disable_lock_profiling true", "Disable Lock Profiling -> TRUE", onLog)
@@ -522,6 +542,15 @@ object TurboBoosterManager {
         runStep("device_config delete activity_manager use_compaction", "Reset Compaction Config", onLog)
         runStep("device_config delete activity_manager_native_boot use_freezer", "Reset Freezer Config", onLog)
         runStep("device_config delete lmkd_native kill_heaviest_task", "Reset LMKD Config", onLog)
+        runStep("device_config override lmkd_native kill_heaviest_task false", "Reset LMKD Heaviest Task", onLog)
+
+        // Reset HyperOS / MMS & SmoothCorner
+        mqsasSetProp("persist.sys.mms.kill_fas_cached_idle", "false", "Reset MMS Kill FAS Idle -> FALSE", onLog)
+        mqsasSetProp("persist.sys.support_window_smoothcorner", "false", "Reset Window SmoothCorner -> FALSE", onLog)
+        mqsasSetProp("persist.sys.support_view_smoothcorner", "false", "Reset View SmoothCorner -> FALSE", onLog)
+        mqsasSetProp("persist.sys.advanced_visual_release", "0", "Reset Advanced Visual Release -> 0", onLog)
+        mqsasSetProp("persist.sys.computility.cpulevel", "0", "Reset Computility CPU Level -> 0", onLog)
+        mqsasSetProp("persist.sys.computility.gpulevel", "0", "Reset Computility GPU Level -> 0", onLog)
 
         // Reset Games
         for ((pkg, name) in TARGET_GAMES) {

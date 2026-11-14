@@ -522,4 +522,56 @@ git push origin main
    - **`MainActivity.kt`**: Sinkronisasi eksplisit `switchTurboMode.isChecked = true` dan `switchAutoBoot.isChecked = true` saat Master 1-Click Boost selesai.
 
 ---
+
+## 12. Update 14 November 2026 — TurboBooster v2.1.2 (Fix Crash Launcher com.miui.home & Lockscreen Bounce)
+
+- **Version**: `versionCode = 18`, `versionName = "2.1.2"`
+- **Binary APK**: `release/TurboBooster.apk` (2.1 MB)
+- **Target Device**: Xiaomi Redmi Pad SE (`xun`), HyperOS 2.0 / Android 15, Adreno 610, 4GB RAM
+
+### 1. Root Cause Forensic Analysis (Bedah Forensik Masalah):
+Berdasarkan investigasi menyeluruh melalui `dumpsys activity exit-info com.miui.home`, `dumpsys activity exit-info com.android.systemui`, dan `tombstone_14`:
+1. **SIGSEGV Crash pada `SmoothCorner::clipSmoothCorner` (Adreno 610 Driver Conflict)**:
+   - Skrip `boost_100_celah_master.sh` & `boost_flagship_unfcker.sh` sebelumnya menginjeksi property MQSAS 21: `persist.sys.support_window_smoothcorner true`, `persist.sys.support_view_smoothcorner true`, dan `persist.sys.computility.cpulevel 6`.
+   - Pada GPU Adreno 610 (Snapdragon 680), hardware pipeline `libhwui.so` mengalami null pointer dereference (`fault addr 0x61`) di dalam fungsi `SmoothCorner::clipSmoothCorner` saat merender transisi jendela atau floating freeform window mode 5 ("flying app").
+   - Akibatnya, `com.android.systemui` mengalami fatal exception (`reason=4 APP CRASH (EXCEPTION)`), me-reset Keyguard dan langsung mental (bounce) ke lock screen saat pengguna keluar dari aplikasi atau membuka floating window.
+2. **LMKD `kill_heaviest_task = true` Menargetkan Launcher `com.miui.home`**:
+   - `com.miui.home` di tablet HyperOS mengonsumsi RSS sebesar 150MB s/d 270MB untuk caching ikon, widget, dan tata letak launcher.
+   - Saat aplikasi memori berat (CapCut, Facebook, Shopee, game, atau browser) dibuka, `com.miui.home` turun ke status background/cached. Dengan flag `kill_heaviest_task = true`, daemon LMKD secara agresif memilih proses dengan RSS terbesar (`com.miui.home`) dan mengirimkan `SIGKILL 9` (`reason=2 SIGNALED status=9` atau `reason=3 LOW_MEMORY`).
+   - Diperparah oleh `persist.sys.mms.kill_fas_cached_idle true` dari Xiaomi MMS dan `max_cached_processes 16` yang terlalu sempit, memicu launcher terbunuh terus-menerus.
+3. **Absennya Whitelist & Kompaksi Berlebih di `turbodaemon`**:
+   - `turbodaemon` (Rust native daemon) belum memasukkan `com.miui.home` dan `com.android.systemui` ke dalam `protected_apps`.
+   - Fitur screen-off gentle memory reclaimer sebelumnya mengeksekusi `cmd activity compact system`, yang memampatkan seluruh memori launcher ke zRAM, memicu page fault besar dan lonjakan PSI stall saat tablet dinyalakan kembali.
+
+### 2. Tindakan Perbaikan & Solusi Komprehensif (v2.1.2):
+1. **LMKD & Memory Headroom Tuning (`TurboBoosterManager.kt` & Shell Scripts)**:
+   - Mengubah `kill_heaviest_task` dari `true` ke `false` via `device_config override lmkd_native kill_heaviest_task false` dan `device_config delete lmkd_native kill_heaviest_task`. LMKD kembali ke urutan OOM Score standar (membunuh background leeches 900+, bukan launcher).
+   - Menaikkan `max_cached_processes` dari 16 menjadi 24 untuk memberikan ruang napas bagi `com.miui.home`.
+   - Mematikan pembunuhan idle oleh Xiaomi MMS: `persist.sys.mms.kill_fas_cached_idle false`.
+2. **Eliminasi Fatal Hardware Crash (`SmoothCorner`)**:
+   - Mengunci `persist.sys.support_window_smoothcorner false` dan `persist.sys.support_view_smoothcorner false` via MQSAS 21.
+   - Me-reset `persist.sys.computility.cpulevel 0` dan `persist.sys.advanced_visual_release 0` ke level hardware aman Snapdragon 680.
+3. **Imunitas Mutlak Launcher & SystemUI**:
+   - Mengeksekusi proteksi tingkat framework:
+     * `cmd activity set-bg-restriction-level --user 0 com.miui.home exempted`
+     * `am set-standby-bucket com.miui.home active`
+     * `cmd appops set com.miui.home RUN_IN_BACKGROUND allow` & `RUN_ANY_IN_BACKGROUND allow`
+     * `dumpsys deviceidle whitelist +com.miui.home` & `+com.android.systemui`
+     * `device_config put system_performance com.android.server.flags.skip_home_art_pins false`
+     * `device_config put system_performance com.android.server.flags.pin_webview true`
+     * `cmd pinner repin`
+   - Menghapus `com.miui.home` dari perulangan `am compact full` di seluruh skrip (`boost_pure_zram_compaction.sh`, dll).
+4. **Rust Native Daemon (`turbodaemon`) Hardening**:
+   - Memasukkan `com.miui.home`, `com.android.systemui`, `com.miui.securitycenter`, `com.google.android.gms`, dan `com.arya.turbobooster` ke dalam `protected_apps`.
+   - Menghapus pemanggilan `cmd activity compact system` dari screen-off reclaimer dan `TRIGGER_RECLAIM`.
+   - Menambahkan background monitoring thread yang secara persisten mengawal status `kill_heaviest_task false`, `max_cached_processes 24`, dan `support_window_smoothcorner false`.
+   - Mengompilasi ulang binary via `build_daemon.sh` (`libturbodaemon.so` 536KB) dan mem-packaging ke APK.
+
+### 3. Hasil Pengujian & Verifikasi Live Tablet:
+- **Pengujian Multi-Aplikasi Berat**: CapCut Pad Pro (`com.lemon.ccpadpro`), Facebook (`com.facebook.katana`), Shopee (`com.shopee.id`), dan Oxide Browser (`com.aistudio.oxidebrowser.vxkrzt`) dibuka bergantian.
+- **Pengujian Freeform Multi-Window ("flying app", Windowing Mode 5)**: Membuka aplikasi dalam jendela bebas melayang, memindahkannya, dan menekan tombol Home.
+- **Hasil Exit-Info**: `com.miui.home` (PID 24841) bertahan 100% stabil, 0 kali restart, 0 crash exception, dan tablet sama sekali tidak pernah mental ke lockscreen.
+- **Invarian Layar (Strict 205 DPI)**: Kerapatan layar tablet tetap terkunci aman di **205 DPI** (`Physical: 280`, `Override: 205`, `1200x1920`).
+
+---
 *Catatan ini dibuat secara otomatis dan komprehensif sebagai single source of truth untuk seluruh sesi pengerjaan Redmi Pad SE & Android Craft Suite.*

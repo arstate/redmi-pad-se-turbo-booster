@@ -71,24 +71,40 @@ $ADB device_config put activity_manager compact_proc_state_throttle 1
 # FASE 3: TUNING LOW MEMORY KILLER (LMKD) & CACHED APPS LIMIT
 # Biarkan aplikasi nongkrong di zRAM tanpa dibunuh paksa oleh LMKD
 # ==============================================================================
-echo "[3/4] Menyesuaikan batas LMKD & Cached Processes (4GB Sweet Spot 16)..."
-$ADB device_config put activity_manager max_cached_processes 16
+echo "[3/4] Menyesuaikan batas LMKD & Cached Processes (4GB Sweet Spot 24)..."
+$ADB device_config put activity_manager max_cached_processes 24
+$ADB device_config override lmkd_native kill_heaviest_task false
+$ADB device_config delete lmkd_native kill_heaviest_task > /dev/null 2>&1
 $ADB device_config put activity_manager lm_kill_throttle_ms 3000
 $ADB device_config put activity_manager_native_boot max_phantom_processes 128
 $ADB settings put global settings_enable_monitor_phantom_procs false
 
 # Matikan window blur agar GPU Adreno 610 tidak terbebani saat multitasking
 $ADB settings put global disable_window_blurs 1
-$ADB settings put system deviceLevelList "v:1,c:3,g:1,m:2"
 
-# Elevasi level komputasi CPU via MQSAS
-$ADB service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.computility.cpulevel 6" s16 "/dev/null" i32 600 > /dev/null 2>&1
+# Reset computility & SmoothCorner (Fixes SIGSEGV on Adreno 610)
+$ADB service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.computility.cpulevel 0" s16 "/dev/null" i32 600 > /dev/null 2>&1
+$ADB service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.advanced_visual_release 0" s16 "/dev/null" i32 600 > /dev/null 2>&1
+$ADB service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_view_smoothcorner false" s16 "/dev/null" i32 600 > /dev/null 2>&1
+$ADB service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_window_smoothcorner false" s16 "/dev/null" i32 600 > /dev/null 2>&1
+$ADB service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.mms.kill_fas_cached_idle false" s16 "/dev/null" i32 600 > /dev/null 2>&1
+
+# Explicit Home Launcher & SystemUI Immunity
+$ADB cmd activity set-bg-restriction-level --user 0 com.miui.home exempted > /dev/null 2>&1
+$ADB am set-standby-bucket com.miui.home active > /dev/null 2>&1
+$ADB cmd appops set com.miui.home RUN_IN_BACKGROUND allow > /dev/null 2>&1
+$ADB cmd appops set com.miui.home RUN_ANY_IN_BACKGROUND allow > /dev/null 2>&1
+$ADB dumpsys deviceidle whitelist +com.miui.home > /dev/null 2>&1
+$ADB dumpsys deviceidle whitelist +com.android.systemui > /dev/null 2>&1
+$ADB device_config put system_performance com.android.server.flags.skip_home_art_pins false > /dev/null 2>&1
+$ADB device_config put system_performance com.android.server.flags.pin_webview true > /dev/null 2>&1
+$ADB cmd pinner repin > /dev/null 2>&1
 
 # ==============================================================================
 # FASE 4: TRIGGER INSTANT COMPACTION & AUDIT MEMINFO
 # ==============================================================================
-echo "[4/4] Menjalankan instant memory compaction pada app utama..."
-for PKG in com.lemon.ccpadpro com.miui.home com.android.chrome; do
+echo "[4/4] Menjalankan instant memory compaction pada app latar (kecuali launcher)..."
+for PKG in com.lemon.ccpadpro com.android.chrome; do
     $ADB am compact full $PKG > /dev/null 2>&1
 done
 

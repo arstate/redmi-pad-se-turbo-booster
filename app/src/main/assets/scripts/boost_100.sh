@@ -99,13 +99,15 @@ device_config override system_performance com.android.server.flags.pin_webview t
 # ==============================================================================
 settings put global isExternalRamOn 0
 settings put global ram_expand_size 0
-settings put global activity_manager_constants "low_swap_threshold_percent=0.5,max_cached_processes=16,max_phantom_processes=128,power_check_max_cpu_1=16,power_check_max_cpu_2=16,power_check_max_cpu_3=8,power_check_max_cpu_4=4,power_check_max_cpu_5=4"
-device_config override lmkd_native kill_heaviest_task true
+settings put global activity_manager_constants "low_swap_threshold_percent=0.5,max_cached_processes=24,max_phantom_processes=128,power_check_max_cpu_1=16,power_check_max_cpu_2=16,power_check_max_cpu_3=8,power_check_max_cpu_4=4,power_check_max_cpu_5=4"
+device_config override lmkd_native kill_heaviest_task false
+device_config delete lmkd_native kill_heaviest_task 2>/dev/null || true
+device_config put activity_manager max_cached_processes 24
 device_config override lmk_native_boot swap_util_max 85
 device_config override lmk_native_boot thrashing_limit 20
 device_config override activity_manager use_compaction true
 device_config override activity_manager compact_proactive true
-cmd activity compact system
+# Protect system & launcher heap from aggressive compression
 cmd activity memory-factor set NORMAL
 
 # ==============================================================================
@@ -165,18 +167,30 @@ settings put global enable_freeform_support 1
 settings put global force_resizable_activities 1
 
 # HyperOS Flagship Spoofing & Powerkeeper Lockdown
-settings put system deviceLevelList "v:1,c:3,g:1,m:2"
 cmd appops set com.miui.powerkeeper WRITE_SETTINGS ignore
 cmd appops set com.miui.powerkeeper GET_USAGE_STATS ignore
 cmd appops set com.miui.powerkeeper RUN_IN_BACKGROUND ignore
 cmd appops set com.xiaomi.joyose TOAST_WINDOW ignore 2>/dev/null || true
 am force-stop com.xiaomi.joyose 2>/dev/null || true
 
-# MQSAS Service Backdoor for Level 6 Computility
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.computility.cpulevel 6" s16 "/dev/null" i32 600 2>/dev/null || true
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.advanced_visual_release 3" s16 "/dev/null" i32 600 2>/dev/null || true
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_view_smoothcorner true" s16 "/dev/null" i32 600 2>/dev/null || true
-service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_window_smoothcorner true" s16 "/dev/null" i32 600 2>/dev/null || true
+# Reset Computility & SmoothCorner (Fixes SIGSEGV in libhwui SmoothCorner::clipSmoothCorner on Adreno 610)
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.computility.cpulevel 0" s16 "/dev/null" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.advanced_visual_release 0" s16 "/dev/null" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_view_smoothcorner false" s16 "/dev/null" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.support_window_smoothcorner false" s16 "/dev/null" i32 600 2>/dev/null || true
+service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.mms.kill_fas_cached_idle false" s16 "/dev/null" i32 600 2>/dev/null || true
+
+# Explicit Home Launcher & SystemUI Immunity
+cmd activity set-bg-restriction-level --user 0 com.miui.home exempted 2>/dev/null || true
+am set-standby-bucket com.miui.home active 2>/dev/null || true
+cmd appops set com.miui.home RUN_IN_BACKGROUND allow 2>/dev/null || true
+cmd appops set com.miui.home RUN_ANY_IN_BACKGROUND allow 2>/dev/null || true
+dumpsys deviceidle whitelist +com.miui.home 2>/dev/null || true
+dumpsys deviceidle whitelist +com.android.systemui 2>/dev/null || true
+device_config put system_performance com.android.server.flags.skip_home_art_pins false 2>/dev/null || true
+device_config put system_performance com.android.server.flags.pin_webview true 2>/dev/null || true
+cmd pinner repin 2>/dev/null || true
+
 service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.sf.disable_blurs 1" s16 "/dev/null" i32 600 2>/dev/null || true
 service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.background_blur_supported false" s16 "/dev/null" i32 600 2>/dev/null || true
 service call miui.mqsas.IMQSNative 21 i32 1 s16 "setprop" i32 1 s16 "persist.sys.miui_blur_enabled false" s16 "/dev/null" i32 600 2>/dev/null || true

@@ -94,6 +94,7 @@ class TurboBoosterArsenalTest {
             "debug.sqlite.journalmode MEMORY",
             "debug.sqlite.wal.syncmode OFF",
             "deviceLevelList \"v:1,c:3,g:3\"",
+            "computility.cpulevel 6",
             "computility.gpulevel 6",
             "extm.bdsize 8192",
             "zram_size 8192",
@@ -101,7 +102,11 @@ class TurboBoosterArsenalTest {
             "kuntilanak_seram",
             "debug.sf.disable_backpressure",
             "debug.sf.latch_unsignaled",
-            "debug.sf.vulkan_renderengine"
+            "debug.sf.vulkan_renderengine",
+            "kill_heaviest_task true",
+            "support_window_smoothcorner true",
+            "support_view_smoothcorner true",
+            "am compact full com.miui.home"
         )
 
         for (dir in scriptsDirs) {
@@ -145,6 +150,8 @@ class TurboBoosterArsenalTest {
     @Test
     fun testProtectedAppsDefault() {
         val protected = TurboBoosterManager.DEFAULT_PROTECTED_APPS
+        assertTrue("Launcher com.miui.home must be protected", protected.contains("com.miui.home"))
+        assertTrue("SystemUI com.android.systemui must be protected", protected.contains("com.android.systemui"))
         assertTrue("WhatsApp must be in default protected apps", protected.contains("com.whatsapp"))
         assertTrue("Telegram must be in default protected apps", protected.contains("org.telegram.messenger"))
         assertTrue("Discord must be in default protected apps", protected.contains("com.discord"))
