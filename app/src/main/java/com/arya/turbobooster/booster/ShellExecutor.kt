@@ -69,11 +69,15 @@ object ShellExecutor {
         }
     }
 
-    suspend fun execute(command: String, requirePrivileged: Boolean = true): CommandResult = withContext(Dispatchers.IO) {
+    suspend fun execute(
+        command: String,
+        requirePrivileged: Boolean = true,
+        timeoutMs: Long = 10000L
+    ): CommandResult = withContext(Dispatchers.IO) {
         if (isShizukuAvailable() && hasShizukuPermission() && newProcessMethod != null) {
-            executeViaShizuku(command)
+            executeViaShizuku(command, timeoutMs)
         } else if (!requirePrivileged) {
-            executeViaLocalShell(command)
+            executeViaLocalShell(command, timeoutMs)
         } else {
             CommandResult(
                 command = command,
@@ -85,11 +89,11 @@ object ShellExecutor {
         }
     }
 
-    private suspend fun executeViaShizuku(command: String): CommandResult {
+    private suspend fun executeViaShizuku(command: String, timeoutMs: Long = 10000L): CommandResult {
         return try {
             val method = newProcessMethod ?: throw IllegalStateException("Shizuku newProcess method unavailable")
             val process = method.invoke(null, arrayOf("sh", "-c", command), null, null) as Process
-            readProcessOutput(process, command)
+            readProcessOutput(process, command, timeoutMs)
         } catch (t: Throwable) {
             Log.e(TAG, "Shizuku execution failed: ${t.message}", t)
             CommandResult(
@@ -102,10 +106,10 @@ object ShellExecutor {
         }
     }
 
-    private suspend fun executeViaLocalShell(command: String): CommandResult {
+    private suspend fun executeViaLocalShell(command: String, timeoutMs: Long = 10000L): CommandResult {
         return try {
             val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
-            readProcessOutput(process, command)
+            readProcessOutput(process, command, timeoutMs)
         } catch (t: Throwable) {
             Log.e(TAG, "Local shell execution failed: ${t.message}", t)
             CommandResult(
@@ -118,7 +122,7 @@ object ShellExecutor {
         }
     }
 
-    private suspend fun readProcessOutput(process: Process, command: String, timeoutMs: Long = 8000L): CommandResult = withContext(Dispatchers.IO) {
+    private suspend fun readProcessOutput(process: Process, command: String, timeoutMs: Long = 10000L): CommandResult = withContext(Dispatchers.IO) {
         try {
             coroutineScope {
                 val stdoutDeferred = async {

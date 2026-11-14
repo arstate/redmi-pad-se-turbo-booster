@@ -347,6 +347,7 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread { appendCommandEntry(entry) }
             }
 
+            binding.switchTurboMode.isChecked = true
             binding.switchAutoBoot.isChecked = TurboBoosterManager.isAutoBootEnabled(this@MainActivity)
             updateProfileUI(BoosterProfile.EXTREME_GAMING_RENDER)
             binding.btnMasterBoost.isEnabled = true

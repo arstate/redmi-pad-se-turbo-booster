@@ -601,11 +601,13 @@ object TurboBoosterManager {
 
     /**
      * SMART INCREMENTAL AOT SPEED COMPILATION
-     * Automatically skips packages already compiled with [status=speed].
+     * Automatically skips packages already compiled with [status=speed],
+     * running directly from APK ([status=run-from-apk]), optimized via Cloud Dex Metadata
+     * ([reason=vdex-dm]), compiled via commandline ([reason=cmdline]), or WebAPKs.
      * Only compiles packages that are NOT yet compiled to speed (e.g. newly installed apps).
      */
     suspend fun executeSmartIncrementalAot(
-        _context: Context,
+        context: Context,
         onLog: ((LogEntry) -> Unit)? = null
     ): Boolean {
         if (!ShellExecutor.isShizukuAvailable() || !ShellExecutor.hasShizukuPermission()) {
@@ -615,11 +617,14 @@ object TurboBoosterManager {
 
         onLog?.invoke(LogEntry("", ">>> SMART INCREMENTAL AOT SPEED COMPILATION <<<", "Scanning package compilation status...", true))
 
+        val prefs = context.getSharedPreferences("turbobooster_aot_prefs", Context.MODE_PRIVATE)
+        val previouslyCompiled = prefs.getStringSet("compiled_packages", emptySet())?.toMutableSet() ?: mutableSetOf()
+
         // 1. Gather Candidate Packages: Core UI/Framework + 3rd Party User Apps
         val candidatePkgs = mutableListOf<String>()
         candidatePkgs.addAll(CORE_AOT_PACKAGES)
 
-        val thirdPartyRes = ShellExecutor.execute("pm list packages -3", requirePrivileged = true)
+        val thirdPartyRes = ShellExecutor.execute("pm list packages -3", requirePrivileged = true, timeoutMs = 8000L)
         if (thirdPartyRes.isSuccess && thirdPartyRes.stdout.isNotBlank()) {
             thirdPartyRes.stdout.lines().forEach { line ->
                 val pkg = line.trim().removePrefix("package:").trim()
@@ -629,9 +634,10 @@ object TurboBoosterManager {
             }
         }
 
-        // 2. Fast Dexopt Status Parsing via dumpsys package dexopt
-        val statusMap = mutableMapOf<String, String>()
-        val dexoptDump = ShellExecutor.execute("dumpsys package dexopt", requirePrivileged = true)
+        // 2. Fast Dexopt Status Parsing via dumpsys package dexopt (timeout 25s for full system dump)
+        data class DexoptInfo(val status: String, val reason: String)
+        val statusMap = mutableMapOf<String, DexoptInfo>()
+        val dexoptDump = ShellExecutor.execute("dumpsys package dexopt", requirePrivileged = true, timeoutMs = 25000L)
         if (dexoptDump.isSuccess && dexoptDump.stdout.isNotBlank()) {
             var currentPkg: String? = null
             for (line in dexoptDump.stdout.lines()) {
@@ -641,13 +647,18 @@ object TurboBoosterManager {
                     continue
                 }
                 if (currentPkg != null && trimmed.contains("[status=")) {
-                    val statusStart = trimmed.indexOf("[status=") + 8
-                    val statusEnd = trimmed.indexOf(']', statusStart)
-                    if (statusEnd > statusStart) {
-                        val status = trimmed.substring(statusStart, statusEnd)
-                        if (!statusMap.containsKey(currentPkg)) {
-                            statusMap[currentPkg] = status
-                        }
+                    val sStart = trimmed.indexOf("[status=") + 8
+                    val sEnd = trimmed.indexOf(']', sStart)
+                    val status = if (sEnd > sStart) trimmed.substring(sStart, sEnd) else ""
+
+                    val rStart = trimmed.indexOf("[reason=")
+                    val reason = if (rStart != -1) {
+                        val rEnd = trimmed.indexOf(']', rStart + 8)
+                        if (rEnd > rStart + 8) trimmed.substring(rStart + 8, rEnd) else ""
+                    } else ""
+
+                    if (!statusMap.containsKey(currentPkg)) {
+                        statusMap[currentPkg] = DexoptInfo(status, reason)
                     }
                 }
             }
@@ -655,45 +666,83 @@ object TurboBoosterManager {
 
         var skippedCount = 0
         var compiledCount = 0
+        var updatedPrefs = false
 
         for (pkg in candidatePkgs) {
-            // Check status from bulk dump map or per-package fallback
-            var status = statusMap[pkg]
-            if (status == null) {
-                val pCheck = ShellExecutor.execute("dumpsys package $pkg | grep -E '\\[status='", requirePrivileged = true)
-                if (pCheck.isSuccess && pCheck.stdout.isNotBlank()) {
-                    val statusStart = pCheck.stdout.indexOf("[status=")
-                    if (statusStart != -1) {
-                        val statusEnd = pCheck.stdout.indexOf(']', statusStart + 8)
-                        if (statusEnd > statusStart + 8) {
-                            status = pCheck.stdout.substring(statusStart + 8, statusEnd)
-                        }
-                    }
-                }
-            }
-
-            if (status == "speed") {
+            // PWA WebAPKs have no native dex code to compile
+            if (pkg.startsWith("org.chromium.webapk.")) {
                 skippedCount++
-                onLog?.invoke(LogEntry("", "Skip AOT: $pkg", "Already compiled [status=speed] - skipped", true))
                 continue
             }
 
-            // Needs compilation
-            onLog?.invoke(LogEntry("", "AOT Compiling: $pkg", "Current status: ${status ?: "unknown"} -> speed", true))
-            val compRes = ShellExecutor.execute("cmd package compile -m speed -f $pkg", requirePrivileged = true)
+            // Check status from bulk dump map or per-package fallback
+            var info = statusMap[pkg]
+            if (info == null) {
+                val pCheck = ShellExecutor.execute("dumpsys package $pkg | grep -E '\\[status='", requirePrivileged = true, timeoutMs = 5000L)
+                if (pCheck.isSuccess && pCheck.stdout.isNotBlank()) {
+                    val out = pCheck.stdout
+                    val sStart = out.indexOf("[status=")
+                    val status = if (sStart != -1) {
+                        val sEnd = out.indexOf(']', sStart + 8)
+                        if (sEnd > sStart + 8) out.substring(sStart + 8, sEnd) else ""
+                    } else ""
+
+                    val rStart = out.indexOf("[reason=")
+                    val reason = if (rStart != -1) {
+                        val rEnd = out.indexOf(']', rStart + 8)
+                        if (rEnd > rStart + 8) out.substring(rStart + 8, rEnd) else ""
+                    } else ""
+
+                    info = DexoptInfo(status, reason)
+                    statusMap[pkg] = info
+                }
+            }
+
+            val status = info?.status ?: "unknown"
+            val reason = info?.reason ?: "unknown"
+
+            // Smart Skip Condition:
+            // 1. Fully compiled to speed
+            // 2. Already compiled via cmdline
+            // 3. Optimized via Google Play Cloud Dex Metadata (vdex-dm)
+            // 4. Executed directly from APK (embedded dex, cannot produce odex)
+            // 5. Already recorded in persistent compiled cache
+            val isAlreadyOptimized = (
+                status == "speed" ||
+                status == "run-from-apk" ||
+                reason == "cmdline" ||
+                reason == "vdex-dm" ||
+                previouslyCompiled.contains(pkg)
+            )
+
+            if (isAlreadyOptimized) {
+                skippedCount++
+                onLog?.invoke(LogEntry("", "Skip AOT: $pkg", "Already optimized ($status, $reason) - skipped", true))
+                continue
+            }
+
+            // Needs compilation (newly installed app or uncompiled app)
+            onLog?.invoke(LogEntry("", "AOT Compiling: $pkg", "Status: $status ($reason) -> compiling to speed...", true))
+            val compRes = ShellExecutor.execute("cmd package compile -m speed $pkg", requirePrivileged = true, timeoutMs = 60000L)
             if (compRes.isSuccess) {
                 compiledCount++
+                previouslyCompiled.add(pkg)
+                updatedPrefs = true
                 onLog?.invoke(LogEntry("", "Compiled: $pkg", "Successfully compiled to speed", true))
             } else {
                 onLog?.invoke(LogEntry("", "Compile Failed: $pkg", compRes.stderr.ifBlank { "Exit ${compRes.exitCode}" }, false))
             }
         }
 
+        if (updatedPrefs) {
+            prefs.edit().putStringSet("compiled_packages", previouslyCompiled).apply()
+        }
+
         // Repin buffers & fstrim
         runStep("cmd pinner repin 2>/dev/null || true", "Pinner Repin Core Buffers", onLog)
         runStep("sm fstrim", "Trim eMMC 5.1 Flash Storage", onLog)
 
-        onLog?.invoke(LogEntry("", "Incremental AOT Complete", "Compiled: $compiledCount packages, Skipped: $skippedCount (already speed)", true))
+        onLog?.invoke(LogEntry("", "Incremental AOT Complete", "Compiled: $compiledCount packages, Skipped: $skippedCount (already optimized)", true))
         return true
     }
 

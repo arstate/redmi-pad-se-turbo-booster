@@ -500,4 +500,26 @@ git push origin main
    - Terverifikasi tetap terkunci di 205 DPI (`Physical: 280`, `Override: 205`, `1200x1920`).
 
 ---
+
+## 11. Update 14 November 2026 — TurboBooster v2.1.1 (Incremental AOT Perfection & Shell Timeout Hardening)
+
+- **Version**: `versionCode = 17`, `versionName = "2.1.1"`
+- **Binary APK**: `release/TurboBooster.apk` (2.1 MB)
+- **Production Screenshot**: `screenshot_v2.1.0_production.png` (1920x1200 landscape)
+
+### Temuan Kegagalan & Perbaikan v2.1.1:
+1. **Penyebab Kegagalan AOT di v2.1.0**:
+   - `ShellExecutor.execute()` sebelumnya memiliki hardcoded timeout 8000ms. Perintah `dumpsys package dexopt` pada Snapdragon 680 memerlukan ~10.02s untuk dump seluruh 366+ paket, sehingga query selalu dibatalkan (`TimeoutCancellationException`) dan map status selalu kosong.
+   - Pengecekan status kompilasi hanya memvalidasi `status == "speed"`. Paket dengan status `[status=verify] [reason=vdex-dm]` (Google Play Cloud Dex Metadata), `[status=run-from-apk]` (uncompressed embedded dex), dan `[reason=cmdline]` selalu dianggap belum terkompilasi, menyebabkan kompilasi ulang 27 paket berulang-ulang setiap kali tombol 1-klik ditekan (memakan waktu ~30 detik).
+   - `switchTurboMode.isChecked = true` terlewatkan saat eksekusi `runMasterOneClickBoost()`, menyisakan switch dalam status visual tidak sinkron.
+
+2. **Solusi & Hardening v2.1.1**:
+   - **`ShellExecutor.kt`**: Menambahkan parameter `timeoutMs: Long = 10000L` pada `execute()`, `executeViaShizuku()`, dan `executeViaLocalShell()`. Memberikan timeout 25s untuk `dumpsys package dexopt` dan 60s untuk `cmd package compile`.
+   - **`TurboBoosterManager.kt`**:
+     - Parsing multi-atribut cerdas membaca `status` DAN `reason`.
+     - Kriteria Smart Skip mencakup: `status == "speed"`, `status == "run-from-apk"`, `reason == "cmdline"`, `reason == "vdex-dm"`, WebAPKs (`org.chromium.webapk.*`), serta cache persisten `SharedPreferences`.
+     - Hasil verifikasi di tablet riil: **107 paket di-skip instan (0 detik), 0 paket dikompilasi ulang tidak perlu**.
+   - **`MainActivity.kt`**: Sinkronisasi eksplisit `switchTurboMode.isChecked = true` dan `switchAutoBoot.isChecked = true` saat Master 1-Click Boost selesai.
+
+---
 *Catatan ini dibuat secara otomatis dan komprehensif sebagai single source of truth untuk seluruh sesi pengerjaan Redmi Pad SE & Android Craft Suite.*
