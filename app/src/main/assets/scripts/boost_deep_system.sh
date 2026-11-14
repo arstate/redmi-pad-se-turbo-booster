@@ -4,13 +4,13 @@
 echo '[1/7] Optimasi Frekuensi & Responsivitas Snapdragon 680...'
 cmd power set-adaptive-power-saver-enabled false
 
-echo '[2/7] SQLite WAL Engine & Safe Journaling...'
-setprop debug.sqlite.journalmode WAL
-setprop debug.sqlite.wal.syncmode NORMAL
-setprop debug.sqlite.wal.autocheckpoint 4000
-setprop debug.sqlite.wal.poolsize 8
-setprop debug.sqlite.wal.truncatesize 1048576
-setprop debug.sqlite.idle_connection_timeout 120000
+echo '[2/7] SQLite Safe Anti-Crash Reset...'
+setprop debug.sqlite.journalmode ""
+setprop debug.sqlite.wal.syncmode ""
+setprop debug.sqlite.wal.autocheckpoint ""
+setprop debug.sqlite.wal.poolsize ""
+setprop debug.sqlite.wal.truncatesize ""
+setprop debug.sqlite.idle_connection_timeout ""
 
 echo '[3/7] F2FS Controller Maintenance & Storage TRIM...'
 cmd device_config put storage_native_boot smart_idle_maint_enabled true

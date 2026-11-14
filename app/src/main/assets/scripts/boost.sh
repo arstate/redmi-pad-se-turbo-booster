@@ -68,8 +68,8 @@ setprop debug.sf.hw 1
 setprop debug.egl.hw 1
 setprop debug.egl.buffering 2
 setprop debug.egl.swapinterval 0
-setprop debug.sqlite.journalmode WAL
-setprop debug.sqlite.wal.syncmode NORMAL
+setprop debug.sqlite.journalmode ""
+setprop debug.sqlite.wal.syncmode ""
 setprop debug.sf.early_phase_offset_ns 1000000
 setprop debug.sf.early_app_phase_offset_ns 1000000
 setprop debug.sf.early_gl_phase_offset_ns 1000000

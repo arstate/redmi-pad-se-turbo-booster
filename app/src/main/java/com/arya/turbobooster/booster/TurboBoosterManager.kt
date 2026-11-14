@@ -351,9 +351,9 @@ object TurboBoosterManager {
         runStep("device_config put on_device_personalization global_kill_switch true", "ODP Global Kill-Switch -> TRUE", onLog)
         runStep("device_config put on_device_personalization federated_compute_kill_switch true", "ODP Federated Compute -> FALSE", onLog)
 
-        // SQLite Robust WAL Mode (FIX Corruption Risk: NO MEMORY/OFF)
-        runStep("setprop debug.sqlite.journalmode WAL", "SQLite Journal Mode -> WAL (Safe & Fast)", onLog)
-        runStep("setprop debug.sqlite.wal.syncmode NORMAL", "SQLite WAL Sync Mode -> NORMAL", onLog)
+        // SQLite Framework Default: do not override debug.sqlite.* globally to prevent multi-process locks in apps (e.g. Facebook)
+        runStep("setprop debug.sqlite.journalmode \"\"", "Reset SQLite Journal Mode (Anti-Crash)", onLog)
+        runStep("setprop debug.sqlite.wal.syncmode \"\"", "Reset SQLite WAL Sync Mode (Anti-Crash)", onLog)
 
         // --- LAYER 4: HYPEROS APPOPS & BACKGROUND CAGING ---
         runStep("cmd appops set com.miui.powerkeeper WRITE_SETTINGS ignore", "PowerKeeper Write Settings -> IGNORE", onLog)
@@ -388,7 +388,6 @@ object TurboBoosterManager {
         // Do not force force_fsg_nav_bar or hide_gesture_line (prevents com.miui.home crash to lockscreen)
 
         // Flagship Balanced Animation Scale (0.60x - Smooth & Fast)
-        runStep("settings put system miui_home_animation_rate 2", "MIUI Home Animation Rate -> 2", onLog)
         runStep("settings put global window_animation_scale 0.60", "Window Animation Scale -> 0.60x", onLog)
         runStep("settings put global transition_animation_scale 0.60", "Transition Animation Scale -> 0.60x", onLog)
         runStep("settings put global animator_duration_scale 0.60", "Animator Duration Scale -> 0.60x", onLog)
@@ -503,7 +502,6 @@ object TurboBoosterManager {
         runStep("settings put global window_animation_scale 1.0", "Reset Window Animation Scale -> 1.0x", onLog)
         runStep("settings put global transition_animation_scale 1.0", "Reset Transition Animation Scale -> 1.0x", onLog)
         runStep("settings put global animator_duration_scale 1.0", "Reset Animator Duration Scale -> 1.0x", onLog)
-        runStep("settings put system miui_home_animation_rate 1", "Reset Home Animation Rate -> 1", onLog)
         runStep("settings put secure refresh_rate_mode 0", "Reset Refresh Rate Mode -> Auto/Dynamic", onLog)
         // wm density left untouched to preserve user preference
 
@@ -629,12 +627,9 @@ object TurboBoosterManager {
                 onLog?.invoke(LogEntry("", "Protected: $pkg", "Excluded from caging (User protected)", true))
                 continue
             }
-            runStep("cmd appops set $pkg RUN_IN_BACKGROUND ignore 2>/dev/null || true", "Cage $pkg Background", onLog)
-            runStep("cmd appops set $pkg RUN_ANY_IN_BACKGROUND ignore 2>/dev/null || true", "Cage $pkg Run Any BG", onLog)
-            runStep("cmd appops set $pkg WAKE_LOCK ignore 2>/dev/null || true", "Cage $pkg Wake Lock", onLog)
-            runStep("cmd appops set $pkg 10008 ignore 2>/dev/null || true", "Cage $pkg Autostart (10008)", onLog)
-            runStep("cmd appops set $pkg 10053 ignore 2>/dev/null || true", "Cage $pkg Service Link", onLog)
+            // Safe caging: set standby bucket and restriction level without revoking core AppOps that cause crashes
             runStep("cmd activity set-bg-restriction-level --user 0 $pkg restricted_bucket 2>/dev/null || true", "Restrict BG Bucket $pkg", onLog)
+            runStep("am set-standby-bucket $pkg rare 2>/dev/null || true", "Set Standby Bucket Rare $pkg", onLog)
             runStep("cmd tare set-vip 0 $pkg false 2>/dev/null || true", "TARE Demote VIP $pkg", onLog)
             runStep("cmd deviceidle whitelist -$pkg 2>/dev/null || true", "Remove DeviceIdle Whitelist $pkg", onLog)
         }

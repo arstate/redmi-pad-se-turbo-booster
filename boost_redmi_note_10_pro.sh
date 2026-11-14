@@ -62,8 +62,8 @@ setprop debug.hwui.skip_empty_damage true
 setprop debug.hwui.fps_divisor 1
 setprop debug.egl.swapinterval 0
 setprop debug.gr.numframebuffers 3
-setprop debug.sqlite.journalmode WAL
-setprop debug.sqlite.wal.syncmode NORMAL
+setprop debug.sqlite.journalmode ""
+setprop debug.sqlite.wal.syncmode ""
 setprop vendor.perf.gestureflingboost.enable 1
 setprop debug.velocitytracker.strategy impulse
 

@@ -30,8 +30,8 @@ setprop debug.hwui.use_hint_manager true
 setprop debug.hwui.app_memory_policy 1
 setprop debug.hwui.drawing_enabled true
 setprop debug.sf.predict_hwc_composition_strategy 1
-setprop debug.sqlite.journalmode WAL
-setprop debug.sqlite.wal.syncmode NORMAL
+setprop debug.sqlite.journalmode ""
+setprop debug.sqlite.wal.syncmode ""
 device_config override core_graphics com.android.graphics.hwui.flags.initialize_gl_always false
 device_config override core_graphics com.android.graphics.hwui.flags.clip_surfaceviews false
 

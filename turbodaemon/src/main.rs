@@ -334,7 +334,8 @@ fn main() {
 
                         for &hog in &heavy_hogs {
                             if !st.protected_apps.contains(hog) {
-                                run_cmd("/system/bin/cmd", &["package", "suspend", hog]);
+                                run_cmd("/system/bin/cmd", &["activity", "set-bg-restriction-level", "--user", "0", hog, "restricted_bucket"]);
+                                run_cmd("/system/bin/cmd", &["package", "unsuspend", hog]);
                                 st.suspended_hogs.insert(hog.to_string());
                             }
                         }
@@ -345,6 +346,7 @@ fn main() {
                         st.active_game = None;
 
                         for hog in st.suspended_hogs.drain() {
+                            run_cmd("/system/bin/cmd", &["activity", "set-bg-restriction-level", "--user", "0", &hog, "exempted"]);
                             run_cmd("/system/bin/cmd", &["package", "unsuspend", &hog]);
                         }
                     }

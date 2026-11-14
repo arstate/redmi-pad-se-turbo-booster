@@ -381,4 +381,47 @@ git push origin main
 ```
 
 ---
+
+## 🚀 UPDATE v2.0.4 (14 November 2026): FIX FORCE CLOSE FACEBOOK & MULTI-PROCESS APPS
+
+### 1. Root Cause Analysis (Forensic Crash Diagnosis)
+- **Gejala:** Aplikasi Facebook (`com.facebook.katana`) langsung force-close saat dibuka dari launcher.
+- **Dumpsys Dropbox Stacktrace:**
+  ```text
+  android.database.sqlite.SQLiteDatabaseLockedException: database is locked (code 5 SQLITE_BUSY): retrycount exceeded
+      at android.database.sqlite.SQLiteConnection.nativeExecuteForCursorWindow(Native Method)
+      at android.database.sqlite.SQLiteConnection.executeForCursorWindow(SQLiteConnection.java:1037)
+      at android.database.sqlite.SQLiteOpenHelper.getWritableDatabase(SQLiteOpenHelper.java:316)
+  ```
+- **Penyebab Utama:** Property sistem framework `debug.sqlite.journalmode WAL` & `debug.sqlite.wal.syncmode NORMAL` yang diterapkan secara global via `setprop`. Di Android, framework SQLite memaksa seluruh aplikasi membaca settingan global ini. Aplikasi arsitektur multi-proses seperti Facebook (`:nodex`, `:browser`, `:dash`, main) mengalami lock contention (`SQLITE_BUSY`) saat inisialisasi database.
+- **Penyebab Sekunder:** 
+  1. Revokasi AppOps agresif (`WAKE_LOCK ignore` & `RUN_ANY_IN_BACKGROUND ignore`) pada Facebook.
+  2. Perintah `cmd package suspend` di Rust `turbodaemon` saat game/CapCut aktif yang membekukan package.
+
+### 2. Solusi & Perbaikan Sistem (v2.0.4)
+1. **Reset Total Property Global SQLite:**
+   - Hapus dan reset seluruh `debug.sqlite.*` ke string kosong `""` di Android runtime, `TurboBoosterManager.kt`, dan skrip shell (`boost.sh`, `boost_100.sh`, `boost_deep_system.sh`).
+2. **Safe Background Caging (Anti-Crash):**
+   - Hapus revokasi AppOps `WAKE_LOCK` dan `RUN_ANY_IN_BACKGROUND` pada aplikasi medsos.
+   - Ganti ke `cmd activity set-bg-restriction-level --user 0 <pkg> restricted_bucket` dan `am set-standby-bucket <pkg> rare` yang aman dan tidak memicu crash runtime.
+3. **Rust Daemon Anti-Suspend (`turbodaemon`):**
+   - Hapus pemanggilan `cmd package suspend` dari Rust daemon. Ganti isolasi background dengan pembatasan background bucket tanpa menonaktifkan peluncuran aplikasi oleh user.
+4. **Verifikasi Komprehensif Seluruh Aplikasi (14/14 Apps OK Clean):**
+   - Facebook (`com.facebook.katana`) -> **OK / Normal**
+   - Instagram (`com.instagram.android`) -> **OK / Normal**
+   - TikTok (`com.ss.android.ugc.trill`) -> **OK / Normal**
+   - Shopee (`com.shopee.id`) -> **OK / Normal**
+   - Tokopedia (`com.tokopedia.tkpd`) -> **OK / Normal**
+   - WhatsApp (`com.whatsapp`) -> **OK / Normal**
+   - CapCut (`com.lemon.lvoverseas`) -> **OK / Normal**
+   - Google Chrome (`com.android.chrome`) -> **OK / Normal**
+   - YouTube (`com.google.android.youtube`) -> **OK / Normal**
+   - Google Play Store (`com.android.vending`) -> **OK / Normal**
+   - WordCraft (`com.artcraft.wordcraft`) -> **OK / Normal**
+   - FigCraft (`com.artcraft.figcraft`) -> **OK / Normal**
+   - Adobe Lightroom (`com.adobe.lrmobile`) -> **OK / Normal**
+   - Spotify (`com.spotify.music`) -> **OK / Normal**
+5. **DPI Invariant:** Kerapatan layar tablet tetap terkunci di **205 DPI** (`Physical: 280`, `Override: 205`, `1200x1920`).
+
+---
 *Catatan ini dibuat secara otomatis dan komprehensif sebagai single source of truth untuk seluruh sesi pengerjaan Redmi Pad SE & Android Craft Suite.*
