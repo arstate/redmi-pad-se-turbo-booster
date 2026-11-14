@@ -47,9 +47,8 @@ class BootReceiver : BroadcastReceiver() {
                 }
 
                 if (ShellExecutor.isShizukuAvailable() && ShellExecutor.hasShizukuPermission()) {
-                    Log.d(TAG, "Shizuku ready after ${attempts}s, restoring Turbo profile")
-                    val currentProfile = TurboBoosterManager.getActiveProfile(context)
-                    TurboBoosterManager.applyProfile(context, currentProfile) { entry ->
+                    Log.d(TAG, "Shizuku ready after ${attempts}s, restoring Master 1-Click Boost")
+                    TurboBoosterManager.executeMasterOneClickBoost(context) { entry ->
                         Log.d(TAG, "[${entry.command}] ${entry.output}")
                     }
                 } else {

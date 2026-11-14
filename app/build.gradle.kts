@@ -11,8 +11,8 @@ android {
         applicationId = "com.arya.turbobooster"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "2.0.5"
+        versionCode = 16
+        versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -37,6 +37,11 @@ android {
     }
     buildFeatures {
         viewBinding = true
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
 }
 

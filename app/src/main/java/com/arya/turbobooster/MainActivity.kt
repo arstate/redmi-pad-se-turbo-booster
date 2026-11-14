@@ -136,18 +136,26 @@ class MainActivity : AppCompatActivity() {
         binding.switchTurboMode.isChecked = TurboBoosterManager.isTurboActive(this)
         binding.switchTurboMode.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked && TurboBoosterManager.getActiveProfile(this) == BoosterProfile.STOCK) {
-                applyProfile(BoosterProfile.FLAGSHIP_BALANCED)
+                runMasterOneClickBoost()
             } else if (!isChecked && TurboBoosterManager.getActiveProfile(this) != BoosterProfile.STOCK) {
                 applyProfile(BoosterProfile.STOCK)
             }
         }
 
+        binding.btnMasterBoost.setOnClickListener {
+            runMasterOneClickBoost()
+        }
+
         binding.btnForceApply.setOnClickListener {
-            applyProfile(BoosterProfile.FLAGSHIP_BALANCED)
+            runMasterOneClickBoost()
         }
 
         binding.btnRestoreStock.setOnClickListener {
             applyProfile(BoosterProfile.STOCK)
+        }
+
+        binding.btnCompileAot.setOnClickListener {
+            runManualIncrementalAot()
         }
 
         // Profile switcher buttons
@@ -323,6 +331,52 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun runMasterOneClickBoost() {
+        if (!checkPrivilegeOrPrompt()) return
+
+        lifecycleScope.launch {
+            binding.btnMasterBoost.isEnabled = false
+            binding.switchTurboMode.isEnabled = false
+            binding.btnRestoreStock.isEnabled = false
+            binding.btnForceApply.isEnabled = false
+            appendLog("==================================================")
+            appendLog("🚀 INITIATING 1-CLICK MASTER TURBO BOOST...")
+            appendLog("==================================================")
+
+            val ok = TurboBoosterManager.executeMasterOneClickBoost(this@MainActivity) { entry ->
+                runOnUiThread { appendCommandEntry(entry) }
+            }
+
+            binding.switchAutoBoot.isChecked = TurboBoosterManager.isAutoBootEnabled(this@MainActivity)
+            updateProfileUI(BoosterProfile.EXTREME_GAMING_RENDER)
+            binding.btnMasterBoost.isEnabled = true
+            binding.switchTurboMode.isEnabled = true
+            binding.btnRestoreStock.isEnabled = true
+            binding.btnForceApply.isEnabled = true
+
+            if (ok) {
+                Toast.makeText(this@MainActivity, "⚡ 1-Click Master Boost Aktif! Extreme 90FPS, Daemon, Debloat & AOT Speed!", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this@MainActivity, "⚠️ 1-Click Boost selesai dengan catatan. Cek log.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun runManualIncrementalAot() {
+        if (!checkPrivilegeOrPrompt()) return
+        lifecycleScope.launch {
+            binding.btnCompileAot.isEnabled = false
+            appendLog("--- Running Manual Incremental AOT Speed Compilation ---")
+            val ok = TurboBoosterManager.executeSmartIncrementalAot(this@MainActivity) { entry ->
+                runOnUiThread { appendCommandEntry(entry) }
+            }
+            binding.btnCompileAot.isEnabled = true
+            if (ok) {
+                Toast.makeText(this@MainActivity, "⚙️ Incremental AOT Scan Selesai!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun applyProfile(profile: BoosterProfile) {
         if (!checkPrivilegeOrPrompt()) return
 
@@ -356,26 +410,30 @@ class MainActivity : AppCompatActivity() {
 
         when (profile) {
             BoosterProfile.STOCK -> {
-                binding.tvModeSubtitle.text = "Stock Balanced Mode • Normal Frequencies"
+                binding.tvModeSubtitle.text = "Stock Mode • 60-90Hz Dinamis • Normal Frequencies"
                 binding.tvModeSubtitle.setTextColor(getColor(R.color.md_theme_dark_onSurfaceVariant))
                 binding.tvThermalState.text = "Dynamic (Stock)"
                 binding.tvThermalState.setTextColor(getColor(R.color.md_theme_dark_onSurfaceVariant))
+                binding.btnMasterBoost.text = "⚡ AKTIFKAN 1-KLIK OPREK SEMUA"
             }
             BoosterProfile.FLAGSHIP_BALANCED -> {
                 binding.tvModeSubtitle.text = "FLAGSHIP BALANCED • 2.4GHz Burst • 90Hz • 205 DPI"
                 binding.tvModeSubtitle.setTextColor(getColor(R.color.md_theme_dark_primary))
                 binding.tvThermalState.text = "Balanced (Safe)"
                 binding.tvThermalState.setTextColor(getColor(R.color.accent_green))
+                binding.btnMasterBoost.text = "⚡ 1-KLIK AKTIF: FLAGSHIP 90FPS"
             }
             BoosterProfile.EXTREME_GAMING_RENDER -> {
-                binding.tvModeSubtitle.text = "EXTREME GAMING • Thermal Override 0 • 0.25x Instant"
+                binding.tvModeSubtitle.text = "⚡ 1-KLIK AKTIF: EXTREME 90FPS • DAEMON • DEBLOATED • AOT SPEED"
                 binding.tvModeSubtitle.setTextColor(getColor(R.color.accent_gold))
                 binding.tvThermalState.text = "OVERRIDDEN (Cool/0)"
                 binding.tvThermalState.setTextColor(getColor(R.color.accent_gold))
+                binding.btnMasterBoost.text = "⚡ 1-KLIK AKTIF: EXTREME 90FPS"
             }
             BoosterProfile.DEBLOAT_RESTORE -> {
                 binding.tvModeSubtitle.text = "Debloat Active • Undead Daemons Purged"
                 binding.tvModeSubtitle.setTextColor(getColor(R.color.accent_green))
+                binding.btnMasterBoost.text = "⚡ AKTIFKAN 1-KLIK OPREK SEMUA"
             }
         }
     }
@@ -723,16 +781,33 @@ sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh
                 } catch (_: Throwable) { null }
 
                 withContext(Dispatchers.Main) {
-                    binding.tvCpuGold.text = if (metrics.goldCpuMhz > 0) "${metrics.goldCpuMhz} MHz" else "-- MHz"
-                    binding.tvCpuSilver.text = if (metrics.silverCpuMhz > 0) "${metrics.silverCpuMhz} MHz" else "-- MHz"
+                    val usedGb = String.format(java.util.Locale.US, "%.1f", metrics.ramUsedMb / 1024.0)
+                    val totalGb = String.format(java.util.Locale.US, "%.1f", metrics.ramTotalMb / 1024.0)
+                    val freeGb = String.format(java.util.Locale.US, "%.1f", metrics.ramAvailableMb / 1024.0)
+                    binding.tvRamUsage.text = "$usedGb GB / $totalGb GB"
+                    binding.tvRamFree.text = "Sisa: $freeGb GB (${metrics.ramUsedPercent}% Terpakai)"
+                    binding.progressRam.progress = metrics.ramUsedPercent
+
+                    val zUsedMb = String.format(java.util.Locale.US, "%,d", metrics.zramUsedMb)
+                    val zTotalMb = String.format(java.util.Locale.US, "%,d", metrics.zramTotalMb)
+                    val zFreeMb = String.format(java.util.Locale.US, "%,d", metrics.zramFreeMb)
+                    binding.tvZramUsage.text = "$zUsedMb MB / $zTotalMb MB"
+                    binding.tvZramFree.text = "Sisa: $zFreeMb MB (${metrics.zramUsedPercent}% Terpakai)"
+                    binding.progressZram.progress = metrics.zramUsedPercent
+
+                    binding.tvCpuGold.text = if (metrics.goldCpuMhz > 0) "Gold: ${metrics.goldCpuMhz} MHz" else "Gold: -- MHz"
+                    binding.tvCpuSilver.text = if (metrics.silverCpuMhz > 0) "Silver: ${metrics.silverCpuMhz} MHz" else "Silver: -- MHz"
+                    binding.tvCpuTemp.text = if (metrics.cpuTempC > 0f) String.format(java.util.Locale.US, "%.1f °C", metrics.cpuTempC) else "-- °C"
                     binding.tvThermalState.text = metrics.thermalStatus
                     binding.tvRefreshRate.text = "${metrics.refreshRateHz.toInt()} Hz"
 
                     if (daemonStatusStr != null) {
-                        binding.tvDaemonStatus.text = "⚡ ACTIVE: $daemonStatusStr"
+                        val rssMatch = Regex("rss_kb=(\\d+)").find(daemonStatusStr)?.groupValues?.get(1)?.toIntOrNull()
+                        val rssMb = if (rssMatch != null) String.format(java.util.Locale.US, "%.1f MB", rssMatch / 1024f) else "Active"
+                        binding.tvDaemonStatus.text = "⚡ Active • $rssMb"
                         binding.tvDaemonStatus.setTextColor(getColor(R.color.accent_green))
                     } else {
-                        binding.tvDaemonStatus.text = "Offline • Tap Apply Turbo or Start Shizuku"
+                        binding.tvDaemonStatus.text = "Offline • Tap 1-Click Boost"
                         binding.tvDaemonStatus.setTextColor(getColor(R.color.md_theme_dark_onSurfaceVariant))
                     }
                 }

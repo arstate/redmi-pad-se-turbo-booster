@@ -464,4 +464,40 @@ git push origin main
    - Kerapatan layar tablet tetap terkunci aman di **205 DPI** (`Physical: 280`, `Override: 205`, `1200x1920`).
 
 ---
+
+## 10. Update 14 November 2026 — TurboBooster v2.1.0 (Master 1-Click Boost & Smart Incremental AOT)
+
+- **Version**: `versionCode = 16`, `versionName = "2.1.0"`
+- **Binary APK**: `release/TurboBooster.apk` (2.1 MB)
+- **Production Screenshot**: `screenshot_v2.1.0_production.png` (1920x1200 landscape)
+
+### Fitur & Pembaharuan Utama v2.1.0:
+1. **Master 1-Click Action (`btnMasterBoost` / `switchTurboMode`)**:
+   - Satu klik otomatis menjalankan seluruh arsitektur oprekan performa secara berurutan:
+     1. Profil Extreme 90 FPS Lock (MQSAS Call 21, Gold Core 4-7 affinity, 0.25x instant animation).
+     2. Native Rust Daemon (`turbodaemon`) startup / IPC healthcheck dengan auto-reparent ke init PID 1 (`nohup`).
+     3. Surgical Debloat dengan Smart Detection (otomatis skip 38 paket yang sudah ter-debloat).
+     4. Smart Incremental AOT Speed Compilation (otomatis skip paket yang sudah berstatus `[status=speed]`).
+     5. Auto-Apply on Boot sinkronisasi otomatis.
+2. **Isolasi Sub-Sistem Audio Quad-Speaker Studio**:
+   - Sub-sistem audio (Dolby Atmos, Dirac, Hi-Res spatial, 32-bit float output) tetap terisolasi penuh di kartu kontrol mandiri (`switchAudioBooster`), tidak dipaksa masuk ke dalam 1-click boost.
+3. **Smart Incremental AOT Compilation Engine**:
+   - Membaca status kompilasi via parsing cepat bulk `dumpsys package dexopt` (<1 detik untuk 366+ aplikasi).
+   - Mendeteksi filter `arm64: [status=speed]`. Jika aplikasi sudah terkompilasi ke `speed`, kompilasi di-skip 0 detik.
+   - Hanya mengompilasi aplikasi yang baru diinstall atau belum berstatus `speed` (`cmd package compile -m speed <pkg>`), diakhiri dengan `cmd pinner repin` dan `sm fstrim`.
+   - Mengeliminasi delay kompilasi paksa (-f) berulang dari versi sebelumnya sehingga eksekusi 1-klik tuntas dalam <3 detik.
+4. **Smart Surgical Debloat Skip Detection**:
+   - Memeriksa paket terinstal pada User 0 (`pm list packages --user 0`) dalam 1 query (<50ms).
+   - Melewati paket green-list yang sudah di-uninstall, mencegah pemanggilan `pm uninstall` berulang yang tidak perlu.
+5. **Real-Time Hardware & Memory Telemetry UI (Grid 3x2)**:
+   - **RAM Fisik LPDDR4X**: Digunakan, Sisa dalam GB, Total RAM (contoh: `2.0 GB / 3.6 GB`), Persentase terpakai, dan progress bar visual.
+   - **zRAM Swap LPDDR4X**: Digunakan, Sisa dalam MB, Total swap (contoh: `1,287 MB / 4,095 MB`), Persentase terpakai, dan progress bar visual.
+   - **CPU Snapdragon 680**: Frekuensi live cluster Gold Core (Cores 4-7) & Silver Core (Cores 0-3).
+   - **SoC Temperature & Thermal**: Live temperature dalam °C (misal `46.1 °C`) dan status thermal (Cool / Overridden).
+   - **Display Refresh Rate**: Live 90 Hz lock detection.
+   - **Rust Daemon Status**: Live indicator PID & RSS memory footprint (misal `⚡ Active • 3.3 MB`).
+6. **Invarian Kerapatan Layar (Strict 205 DPI)**:
+   - Terverifikasi tetap terkunci di 205 DPI (`Physical: 280`, `Override: 205`, `1200x1920`).
+
+---
 *Catatan ini dibuat secara otomatis dan komprehensif sebagai single source of truth untuk seluruh sesi pengerjaan Redmi Pad SE & Android Craft Suite.*

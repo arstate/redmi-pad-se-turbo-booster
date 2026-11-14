@@ -40,7 +40,7 @@ class TurboBoosterTileService : TileService() {
 
         CoroutineScope(Dispatchers.IO).launch {
             if (newTargetState) {
-                TurboBoosterManager.applySuperPerformanceMode(this@TurboBoosterTileService) {}
+                TurboBoosterManager.executeMasterOneClickBoost(this@TurboBoosterTileService) {}
             } else {
                 TurboBoosterManager.applyStockMode(this@TurboBoosterTileService) {}
             }

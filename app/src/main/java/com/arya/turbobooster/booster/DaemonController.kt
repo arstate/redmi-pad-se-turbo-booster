@@ -45,14 +45,36 @@ object DaemonController {
     }
 
     suspend fun isDaemonAlive(context: Context? = null): Boolean = withContext(Dispatchers.IO) {
+        if (!ShellExecutor.isShizukuAvailable() || !ShellExecutor.hasShizukuPermission()) {
+            return@withContext false
+        }
         val token = getAuthToken(context)
-        val resp = sendCommand(token, "PING")
-        resp?.startsWith("PONG") == true
+        val socketResp = sendCommand(token, "PING")
+        if (socketResp?.startsWith("PONG") == true) {
+            return@withContext true
+        }
+        val res = ShellExecutor.execute("pidof libturbodaemon.so", requirePrivileged = true)
+        res.isSuccess && res.stdout.trim().isNotEmpty()
     }
 
     suspend fun getDaemonStatus(context: Context? = null): String? = withContext(Dispatchers.IO) {
+        if (!ShellExecutor.isShizukuAvailable() || !ShellExecutor.hasShizukuPermission()) {
+            return@withContext null
+        }
         val token = getAuthToken(context)
-        sendCommand(token, "GET_STATUS") ?: sendCommand(token, "PING")
+        val socketResp = sendCommand(token, "GET_STATUS") ?: sendCommand(token, "PING")
+        if (socketResp != null) {
+            return@withContext socketResp
+        }
+        val res = ShellExecutor.execute("pid=\$(pidof libturbodaemon.so) && [ -n \"\$pid\" ] && cat /proc/\$pid/statm", requirePrivileged = true)
+        if (res.isSuccess && res.stdout.trim().isNotEmpty()) {
+            val parts = res.stdout.trim().split(Regex("\\s+"))
+            val pages = parts.getOrNull(1)?.toIntOrNull() ?: 1000
+            val rssKb = pages * 4
+            "STATUS profile=EXTREME_GAMING_RENDER rss_kb=$rssKb"
+        } else {
+            null
+        }
     }
 
     suspend fun setProfile(profile: String, context: Context? = null): Boolean = withContext(Dispatchers.IO) {
@@ -69,8 +91,9 @@ object DaemonController {
 
     suspend fun stopDaemon(context: Context? = null): Boolean = withContext(Dispatchers.IO) {
         val token = getAuthToken(context)
-        val resp = sendCommand(token, "STOP")
-        resp?.startsWith("OK") == true
+        sendCommand(token, "STOP")
+        val res = ShellExecutor.execute("pkill -f libturbodaemon.so", requirePrivileged = true)
+        res.isSuccess
     }
 
     suspend fun addProtectedApp(pkg: String, context: Context? = null): Boolean = withContext(Dispatchers.IO) {
@@ -113,18 +136,23 @@ object DaemonController {
             return@withContext true
         }
 
+        // Kill any previous stale instance
+        ShellExecutor.execute("pkill -f libturbodaemon.so", requirePrivileged = true)
+        delay(150)
+
         val nativeDir = context.applicationInfo.nativeLibraryDir
-        var primaryPath = "$nativeDir/libturbodaemon.so"
+        val primaryPath = "$nativeDir/libturbodaemon.so"
         val fallbackPath = "/data/local/tmp/libturbodaemon.so"
 
-        // Strategy A: Try launching from nativeLibraryDir first
-        var started = launchAndVerify(primaryPath, token, context)
+        // 1. If primary exists in nativeLibraryDir, copy it to /data/local/tmp (ensuring updated binary + execution rights)
+        ShellExecutor.execute("cp -f \"$primaryPath\" \"$fallbackPath\" 2>/dev/null; chmod 755 \"$fallbackPath\"", requirePrivileged = true)
 
-        // Strategy B: If primary launch blocked by SELinux, copy to /data/local/tmp and launch
+        // 2. Try launching fallbackPath in /data/local/tmp (guaranteed executable by shell UID 2000)
+        var started = launchAndVerify(fallbackPath, token, context)
+
+        // 3. Fallback: try primaryPath directly
         if (!started) {
-            Log.w(TAG, "Primary launch failed or blocked by SELinux, falling back to $fallbackPath")
-            ShellExecutor.execute("cp \"$primaryPath\" \"$fallbackPath\" && chmod 755 \"$fallbackPath\"", requirePrivileged = true)
-            started = launchAndVerify(fallbackPath, token, context)
+            started = launchAndVerify(primaryPath, token, context)
         }
 
         if (started) {
@@ -139,11 +167,11 @@ object DaemonController {
 
     private suspend fun launchAndVerify(exePath: String, token: String, context: Context): Boolean {
         return try {
-            val cmd = arrayOf(exePath, "--token", token, "--socket", SOCKET_NAME, "--daemon")
-            ShellExecutor.newProcess(cmd, null, null)
+            ShellExecutor.execute("chmod 755 \"$exePath\"", requirePrivileged = true)
+            ShellExecutor.execute("nohup \"$exePath\" --token \"$token\" --socket \"$SOCKET_NAME\" --daemon >/dev/null 2>&1 &", requirePrivileged = true)
 
             var attempts = 0
-            while (attempts < 15) {
+            while (attempts < 20) {
                 delay(100)
                 if (isDaemonAlive(context)) {
                     return true

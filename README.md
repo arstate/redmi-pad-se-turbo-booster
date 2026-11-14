@@ -148,7 +148,9 @@ To prevent EGL surface errors and crashes during video timeline editing or windo
    ```
 3. **Grant Shizuku Permission**: Open **Turbo Booster** and grant permission when prompted.
 4. **Activate Turbo**:
-   - Tap **⚡ Apply Turbo** to activate Super Performance Mode.
+   - Tap **⚡ 1-KLIK AKTIFKAN SEMUA** to automatically run all system performance optimizations (Extreme 90 FPS lock, Rust daemon IPC, surgical debloat with smart skip, incremental AOT speed compilation, and auto-apply on boot).
+   - Audio Quad-Speaker Studio remains cleanly isolated in its own card.
+   - Live hardware telemetry monitors RAM, ZRAM, CPU temperature, and daemon RSS memory in real time!
    - Or add the **Turbo Booster** tile to your Quick Settings / Control Center for instant 1-tap toggling!
 
 ### Method 2: Direct Execution via ADB Shell

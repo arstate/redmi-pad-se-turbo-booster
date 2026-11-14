@@ -99,15 +99,15 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Main Hero Card: Super Performance Toggle -->
+            <!-- Main Hero Card: Master 1-Click Turbo Boost -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 app:cardBackgroundColor="@color/md_theme_dark_surface"
                 app:cardCornerRadius="20dp"
-                app:strokeColor="@color/md_theme_dark_surfaceVariant"
-                app:strokeWidth="1dp">
+                app:strokeColor="@color/accent_gold"
+                app:strokeWidth="1.5dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -130,19 +130,20 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="SUPER PERFORMANCE MODE"
-                                android:textColor="@color/md_theme_dark_onSurface"
-                                android:textSize="18sp"
-                                android:textStyle="bold" />
+                                android:text="MASTER 1-CLICK TURBO BOOST"
+                                android:textColor="@color/accent_gold"
+                                android:textSize="17sp"
+                                android:textStyle="bold"
+                                android:letterSpacing="0.03" />
 
                             <TextView
                                 android:id="@+id/tvModeSubtitle"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
-                                android:text="Stock Balanced Mode • Normal Frequencies"
+                                android:text="Sekali Klik: Extreme 90FPS + Daemon + Debloat + AOT Speed + Auto-Boot"
                                 android:textColor="@color/md_theme_dark_onSurfaceVariant"
-                                android:textSize="13sp" />
+                                android:textSize="12sp" />
                         </LinearLayout>
 
                         <com.google.android.material.materialswitch.MaterialSwitch
@@ -153,119 +154,134 @@
                             android:scaleY="1.25" />
                     </LinearLayout>
 
-                    <com.google.android.material.divider.MaterialDivider
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginVertical="16dp"
-                        app:dividerColor="@color/md_theme_dark_surfaceVariant" />
-
-                    <!-- Profile Selector Row -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp"
-                        android:text="ACTIVE SYSTEM PROFILE"
-                        android:textColor="@color/md_theme_dark_onSurfaceVariant"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        android:letterSpacing="0.06" />
-
+                    <!-- Feature summary pills -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:layout_marginBottom="12dp">
+                        android:layout_marginTop="12dp">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnProfileStock"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="38dp"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="4dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:text="Stock"
-                            android:textSize="11sp"
-                            app:cornerRadius="10dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnProfileFlagship"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="0dp"
-                            android:layout_height="38dp"
-                            android:layout_weight="1.2"
-                            android:layout_marginHorizontal="4dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:text="Flagship"
-                            android:textSize="11sp"
-                            app:cornerRadius="10dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnProfileExtreme"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="38dp"
-                            android:layout_weight="1.2"
-                            android:layout_marginStart="4dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:text="Extreme"
-                            android:textSize="11sp"
-                            app:cornerRadius="10dp" />
-                    </LinearLayout>
-
-                    <!-- Quick buttons -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnForceApply"
-                            style="@style/Widget.Material3.Button"
+                        <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:layout_marginEnd="8dp"
-                            android:text="⚡ Apply Turbo"
-                            app:backgroundTint="@color/md_theme_dark_primaryContainer"
-                            app:cornerRadius="12dp" />
+                            android:text="⚡ 90FPS Extreme"
+                            android:textColor="@color/accent_green"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="🦀 Rust Daemon"
+                            android:textColor="@color/accent_green"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="🧹 Smart Debloat"
+                            android:textColor="@color/accent_green"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="⚙️ AOT Speed"
+                            android:textColor="@color/accent_green"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.divider.MaterialDivider
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="14dp"
+                        app:dividerColor="@color/md_theme_dark_surfaceVariant" />
+
+                    <!-- Primary Master 1-Click Action Button -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMasterBoost"
+                        style="@style/Widget.Material3.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:text="⚡ AKTIFKAN 1-KLIK OPREK SEMUA"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.04"
+                        app:backgroundTint="@color/accent_gold"
+                        android:textColor="@color/md_theme_dark_background"
+                        app:cornerRadius="14dp" />
+
+                    <!-- Secondary Reset Button & Force Profile Aliases -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnRestoreStock"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="40dp"
                             android:layout_weight="1"
-                            android:layout_marginStart="8dp"
-                            android:text="↺ Reset Stock"
-                            app:cornerRadius="12dp" />
+                            android:layout_marginEnd="6dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:text="↺ Reset ke Stock"
+                            android:textSize="11sp"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnForceApply"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:text="⚡ Force Re-Boost"
+                            android:textSize="11sp"
+                            app:cornerRadius="10dp" />
+                    </LinearLayout>
+
+                    <!-- Hidden / Legacy Profile Buttons to preserve view binding compatibility -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <Button android:id="@+id/btnProfileStock" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                        <Button android:id="@+id/btnProfileFlagship" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                        <Button android:id="@+id/btnProfileExtreme" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                     </LinearLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Live Metrics Grid (Responsive 2x2 Layout) -->
+            <!-- Live Hardware & Memory Telemetry (Performance & RAM Monitor) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:text="LIVE HARDWARE TELEMETRY"
+                android:text="LIVE HARDWARE &amp; MEMORY TELEMETRY"
                 android:textColor="@color/md_theme_dark_primary"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.08" />
 
-            <!-- Row 1: CPU Gold & CPU Silver -->
+            <!-- Row 1: RAM Physical & ZRAM Swap -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginBottom="8dp">
 
-                <!-- Metric 1: CPU Gold -->
+                <!-- Metric 1: RAM Physical Usage -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -273,30 +289,54 @@
                     android:layout_marginEnd="4dp"
                     app:cardBackgroundColor="@color/md_theme_dark_surface"
                     app:cardCornerRadius="14dp">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="12dp">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="CPU Gold (Cores 4-7)"
+                            android:text="RAM Physical (4GB LPDDR4X)"
                             android:textColor="@color/md_theme_dark_onSurfaceVariant"
                             android:textSize="11sp" />
+
                         <TextView
-                            android:id="@+id/tvCpuGold"
+                            android:id="@+id/tvRamUsage"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="3dp"
-                            android:text="-- MHz"
-                            android:textColor="@color/accent_gold"
-                            android:textSize="17sp"
+                            android:text="-- GB / -- GB"
+                            android:textColor="@color/md_theme_dark_primary"
+                            android:textSize="16sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvRamFree"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Sisa: -- GB (0%)"
+                            android:textColor="@color/accent_green"
+                            android:textSize="11sp" />
+
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/progressRam"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:max="100"
+                            android:progress="50"
+                            app:indicatorColor="@color/md_theme_dark_primary"
+                            app:trackColor="@color/md_theme_dark_surfaceVariant"
+                            app:trackCornerRadius="4dp"
+                            app:trackThickness="5dp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Metric 2: CPU Silver -->
+                <!-- Metric 2: zRAM Compaction Usage -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -304,38 +344,156 @@
                     android:layout_marginStart="4dp"
                     app:cardBackgroundColor="@color/md_theme_dark_surface"
                     app:cardCornerRadius="14dp">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="12dp">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="CPU Silver (Cores 0-3)"
+                            android:text="zRAM Swap Compaction"
                             android:textColor="@color/md_theme_dark_onSurfaceVariant"
                             android:textSize="11sp" />
+
                         <TextView
-                            android:id="@+id/tvCpuSilver"
+                            android:id="@+id/tvZramUsage"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="3dp"
-                            android:text="-- MHz"
-                            android:textColor="@color/md_theme_dark_primary"
-                            android:textSize="17sp"
+                            android:text="-- MB / -- MB"
+                            android:textColor="@color/accent_gold"
+                            android:textSize="16sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvZramFree"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Sisa: -- MB (0%)"
+                            android:textColor="@color/accent_green"
+                            android:textSize="11sp" />
+
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/progressZram"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:max="100"
+                            android:progress="25"
+                            app:indicatorColor="@color/accent_gold"
+                            app:trackColor="@color/md_theme_dark_surfaceVariant"
+                            app:trackCornerRadius="4dp"
+                            app:trackThickness="5dp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
-            <!-- Row 2: Thermal State & Refresh Rate -->
+            <!-- Row 2: CPU Clusters & Temperature -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <!-- Metric 3: CPU Clusters -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    app:cardBackgroundColor="@color/md_theme_dark_surface"
+                    app:cardCornerRadius="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="CPU Snapdragon 680"
+                            android:textColor="@color/md_theme_dark_onSurfaceVariant"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/tvCpuGold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="Gold: -- MHz"
+                            android:textColor="@color/accent_gold"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvCpuSilver"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Silver: -- MHz"
+                            android:textColor="@color/md_theme_dark_primary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Metric 4: SoC Temperature & Thermal -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    app:cardBackgroundColor="@color/md_theme_dark_surface"
+                    app:cardCornerRadius="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Suhu CPU &amp; Thermal"
+                            android:textColor="@color/md_theme_dark_onSurfaceVariant"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/tvCpuTemp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="-- °C"
+                            android:textColor="@color/accent_green"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvThermalState"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Cool (0)"
+                            android:textColor="@color/md_theme_dark_onSurfaceVariant"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- Row 3: Screen Refresh Rate & Rust Native Daemon -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginBottom="16dp">
 
-                <!-- Metric 3: Thermal Override -->
+                <!-- Metric 5: Screen Refresh Rate -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -343,48 +501,20 @@
                     android:layout_marginEnd="4dp"
                     app:cardBackgroundColor="@color/md_theme_dark_surface"
                     app:cardCornerRadius="14dp">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Thermal State"
-                            android:textColor="@color/md_theme_dark_onSurfaceVariant"
-                            android:textSize="11sp" />
-                        <TextView
-                            android:id="@+id/tvThermalState"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
-                            android:text="Stock"
-                            android:textColor="@color/accent_green"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
 
-                <!-- Metric 4: Refresh Rate -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    app:cardBackgroundColor="@color/md_theme_dark_surface"
-                    app:cardCornerRadius="14dp">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="12dp">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Refresh Rate"
+                            android:text="Refresh Rate Layar"
                             android:textColor="@color/md_theme_dark_onSurfaceVariant"
                             android:textSize="11sp" />
+
                         <TextView
                             android:id="@+id/tvRefreshRate"
                             android:layout_width="wrap_content"
@@ -392,20 +522,115 @@
                             android:layout_marginTop="3dp"
                             android:text="90 Hz"
                             android:textColor="@color/md_theme_dark_onSurface"
-                            android:textSize="17sp"
+                            android:textSize="16sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Kunci 90 FPS Mantap"
+                            android:textColor="@color/accent_green"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Metric 6: Rust Native Daemon -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    app:cardBackgroundColor="@color/md_theme_dark_surface"
+                    app:cardCornerRadius="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Rust Daemon (UID 2000)"
+                            android:textColor="@color/md_theme_dark_onSurfaceVariant"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/tvDaemonStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="Checking..."
+                            android:textColor="@color/accent_gold"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="IPC Abstract Socket"
+                            android:textColor="@color/md_theme_dark_onSurfaceVariant"
+                            android:textSize="11sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
-            <!-- Native Rust Daemon Card -->
+            <!-- Auto-Apply on Boot Settings Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/md_theme_dark_surface"
+                app:cardCornerRadius="18dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Auto-Apply on Tablet Boot"
+                            android:textColor="@color/md_theme_dark_onSurface"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Otomatis aktifkan seluruh oprekan performa saat tablet dinyalakan ulang"
+                            android:textColor="@color/md_theme_dark_onSurfaceVariant"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchAutoBoot"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Audio Studio / Quad Speaker Tuner Card (ISOLATED SUBSYSTEM) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 app:cardBackgroundColor="@color/md_theme_dark_surface"
                 app:cardCornerRadius="18dp"
-                app:strokeColor="@color/accent_gold"
+                app:strokeColor="@color/md_theme_dark_surfaceVariant"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -429,210 +654,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="⚡ RUST NATIVE DAEMON (UID 2000)"
-                                android:textColor="@color/accent_gold"
-                                android:textSize="14sp"
-                                android:textStyle="bold"
-                                android:letterSpacing="0.04" />
-
-                            <TextView
-                                android:id="@+id/tvDaemonStatus"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="3dp"
-                                android:text="Status: Checking socket..."
-                                android:textColor="@color/md_theme_dark_onSurfaceVariant"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnReclaimRam"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="38dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:text="🧹 Reclaim RAM"
-                            android:textSize="11sp"
-                            app:cornerRadius="10dp" />
-                    </LinearLayout>
-
-                    <com.google.android.material.divider.MaterialDivider
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginVertical="10dp"
-                        app:dividerColor="@color/md_theme_dark_surfaceVariant" />
-
-                    <!-- Daemon & Debloat Actions -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnDebloatAction"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="0dp"
-                            android:layout_height="38dp"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="4dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:text="🧹 Surgical Debloat"
-                            android:textSize="11sp"
-                            app:cornerRadius="10dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnRestoreDebloatAction"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="38dp"
-                            android:layout_weight="1"
-                            android:layout_marginHorizontal="4dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:text="🔄 Restore All"
-                            android:textSize="11sp"
-                            app:cornerRadius="10dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnProtectedApps"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="38dp"
-                            android:layout_weight="1"
-                            android:layout_marginStart="4dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:text="🛡️ Protected"
-                            android:textSize="11sp"
-                            app:cornerRadius="10dp" />
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Settings / Sub-features Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/md_theme_dark_surface"
-                app:cardCornerRadius="18dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Auto-Apply on Tablet Boot"
-                                android:textColor="@color/md_theme_dark_onSurface"
-                                android:textSize="15sp"
-                                android:textStyle="bold" />
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Automatically restores Turbo Booster clocks upon reboot"
-                                android:textColor="@color/md_theme_dark_onSurfaceVariant"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/switchAutoBoot"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
-                    </LinearLayout>
-
-                    <com.google.android.material.divider.MaterialDivider
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginVertical="12dp"
-                        app:dividerColor="@color/md_theme_dark_surfaceVariant" />
-
-                    <!-- Specific Actions Row 1 -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnDownscaleGames"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="6dp"
-                            android:text="🎮 0.7x Games"
-                            android:textSize="12sp"
-                            app:cornerRadius="10dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnOptimizeChrome"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginStart="6dp"
-                            android:text="🌐 Boost Chrome"
-                            android:textSize="12sp"
-                            app:cornerRadius="10dp" />
-                    </LinearLayout>
-
-                    <!-- Specific Actions Row 2 -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnRunBundledScripts"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="📜 Run Bundled APK Scripts"
-                        android:textSize="12sp"
-                        app:cornerRadius="10dp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Audio Studio / Quad Speaker Tuner Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/md_theme_dark_surface"
-                app:cardCornerRadius="18dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="🎵 Quad Speaker Studio Audio"
+                                android:text="🎵 Quad Speaker Studio Audio (Sistem Terpisah)"
                                 android:textColor="@color/md_theme_dark_onSurface"
                                 android:textSize="15sp"
                                 android:textStyle="bold" />
@@ -641,7 +663,8 @@
                                 android:id="@+id/tvAudioStatus"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Dolby Atmos 3D Surround &amp; Deep Bass Punch"
+                                android:layout_marginTop="2dp"
+                                android:text="Dolby Atmos 3D Surround &amp; Deep Bass Punch (Disendirikan)"
                                 android:textColor="@color/md_theme_dark_onSurfaceVariant"
                                 android:textSize="12sp" />
                         </LinearLayout>
@@ -697,6 +720,168 @@
                             android:textSize="11sp"
                             app:cornerRadius="10dp" />
                     </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Advanced Tools & Secondary Actions Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/md_theme_dark_surface"
+                app:cardCornerRadius="18dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🛠️ PERKAKAS LANJUTAN &amp; AKSI MANUAL"
+                        android:textColor="@color/md_theme_dark_onSurfaceVariant"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05"
+                        android:layout_marginBottom="10dp" />
+
+                    <!-- Actions Row 1 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnReclaimRam"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="38dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:text="🧹 Reclaim RAM"
+                            android:textSize="11sp"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCompileAot"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="38dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:text="⚙️ AOT Speed Scan"
+                            android:textSize="11sp"
+                            app:cornerRadius="10dp" />
+                    </LinearLayout>
+
+                    <!-- Actions Row 2 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnDebloatAction"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="38dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:text="🧹 Debloat Manual"
+                            android:textSize="11sp"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRestoreDebloatAction"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="38dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:text="🔄 Restore Paket"
+                            android:textSize="11sp"
+                            app:cornerRadius="10dp" />
+                    </LinearLayout>
+
+                    <!-- Actions Row 3 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnDownscaleGames"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="38dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:text="🎮 0.8x Games"
+                            android:textSize="11sp"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnOptimizeChrome"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="38dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:text="🌐 Boost Chrome"
+                            android:textSize="11sp"
+                            app:cornerRadius="10dp" />
+                    </LinearLayout>
+
+                    <!-- Actions Row 4 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnProtectedApps"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="38dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:text="🛡️ Protected Apps"
+                            android:textSize="11sp"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRunBundledScripts"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="38dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:text="📜 Bundled Scripts"
+                            android:textSize="11sp"
+                            app:cornerRadius="10dp" />
+                    </LinearLayout>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

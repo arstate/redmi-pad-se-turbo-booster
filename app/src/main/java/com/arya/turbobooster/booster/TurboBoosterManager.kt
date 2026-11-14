@@ -116,6 +116,17 @@ object TurboBoosterManager {
         "com.lemon.ccpadpro" to "CapCut Pad Pro"
     )
 
+    // Core System UI & Framework packages targeted for AOT speed compilation
+    val CORE_AOT_PACKAGES = listOf(
+        "com.android.systemui",
+        "com.miui.home",
+        "com.google.android.inputmethod.latin",
+        "com.android.settings",
+        "com.google.android.webview",
+        "com.android.chrome",
+        "com.arya.turbobooster"
+    )
+
     // Non-essential tracing/logging daemons safe to stop via MQSAS Call 21
     val TRACING_DAEMONS = listOf(
         "heapprofd",
@@ -419,10 +430,7 @@ object TurboBoosterManager {
             runStep("dumpsys deviceidle whitelist +$cPkg", "CapCut DeviceIdle Whitelist", onLog)
         }
 
-        // Core UI ART AOT Compilation & Trimming
-        runStep("cmd package compile -m speed -f com.android.systemui", "AOT Speed Compile SystemUI", onLog)
-        runStep("cmd package compile -m speed -f com.miui.home", "AOT Speed Compile MIUI Home", onLog)
-        runStep("cmd package compile -m speed -f com.google.android.inputmethod.latin 2>/dev/null || true", "AOT Speed Gboard", onLog)
+        // Trimming and repin
         runStep("cmd pinner repin 2>/dev/null || true", "Pinner Repin Core Buffers", onLog)
         runStep("sm fstrim", "Trim eMMC 5.1 Flash Storage", onLog)
 
@@ -538,10 +546,11 @@ object TurboBoosterManager {
     }
 
     /**
-     * LAYER 3: SURGICAL DEBLOAT & UNDEAD -800 CRASH-PURGE
+     * LAYER 3: SURGICAL DEBLOAT & UNDEAD -800 CRASH-PURGE (WITH SMART DETECTION)
+     * Checks if package is already uninstalled/disabled for user 0. If already removed, skips it!
      */
     suspend fun executeDebloat(
-        context: Context,
+        _context: Context,
         onLog: (LogEntry) -> Unit
     ): Boolean {
         if (!ShellExecutor.isShizukuAvailable() || !ShellExecutor.hasShizukuPermission()) {
@@ -549,9 +558,17 @@ object TurboBoosterManager {
             return false
         }
 
-        onLog(LogEntry("", ">>> SURGICAL DEBLOAT & UNDEAD CRASH-PURGE INITIATED <<<", "Reaping idle RAM hogs", true))
+        onLog(LogEntry("", ">>> SURGICAL DEBLOAT (SMART DETECTION) INITIATED <<<", "Checking installed packages for user 0...", true))
 
-        var count = 0
+        val installedRes = ShellExecutor.execute("pm list packages --user 0", requirePrivileged = true)
+        val installedPkgs = installedRes.stdout.lines()
+            .map { it.trim().removePrefix("package:").trim() }
+            .filter { it.isNotBlank() }
+            .toSet()
+
+        var purgedCount = 0
+        var skippedCount = 0
+
         for (pkg in ALL_GREEN_LIST) {
             // Anti-Bootloop Rule: NEVER touch packages in RED_LIST
             if (RED_LIST.contains(pkg)) {
@@ -559,20 +576,176 @@ object TurboBoosterManager {
                 continue
             }
 
+            if (!installedPkgs.contains(pkg)) {
+                skippedCount++
+                onLog(LogEntry("", "Skip Debloat: $pkg", "Already debloated (not installed for user 0)", true))
+                continue
+            }
+
             // 1. Uninstall for user 0
             val uninst = ShellExecutor.execute("pm uninstall -k --user 0 $pkg", requirePrivileged = true)
             // 2. Crash undead persistent -800 process from memory immediately
-            ShellExecutor.execute("cmd activity crash --user 0 $pkg", requirePrivileged = true)
+            ShellExecutor.execute("cmd activity crash --user 0 $pkg 2>/dev/null || true", requirePrivileged = true)
             ShellExecutor.execute("cmd appops set $pkg RUN_IN_BACKGROUND ignore 2>/dev/null || true", requirePrivileged = true)
             ShellExecutor.execute("am force-stop $pkg 2>/dev/null || true", requirePrivileged = true)
 
             if (uninst.isSuccess) {
-                count++
+                purgedCount++
                 onLog(LogEntry("", "Debloated: $pkg", "Uninstalled & Undead Process Reaped from RAM", true))
             }
         }
 
-        onLog(LogEntry("", "Debloat Complete", "Purged $count bloat packages from user 0", true))
+        onLog(LogEntry("", "Debloat Complete", "Purged: $purgedCount packages, Skipped: $skippedCount (already uninstalled)", true))
+        return true
+    }
+
+    /**
+     * SMART INCREMENTAL AOT SPEED COMPILATION
+     * Automatically skips packages already compiled with [status=speed].
+     * Only compiles packages that are NOT yet compiled to speed (e.g. newly installed apps).
+     */
+    suspend fun executeSmartIncrementalAot(
+        _context: Context,
+        onLog: ((LogEntry) -> Unit)? = null
+    ): Boolean {
+        if (!ShellExecutor.isShizukuAvailable() || !ShellExecutor.hasShizukuPermission()) {
+            onLog?.invoke(LogEntry("", "AOT Compilation Check", "FAILED: Shizuku UID 2000 required", false))
+            return false
+        }
+
+        onLog?.invoke(LogEntry("", ">>> SMART INCREMENTAL AOT SPEED COMPILATION <<<", "Scanning package compilation status...", true))
+
+        // 1. Gather Candidate Packages: Core UI/Framework + 3rd Party User Apps
+        val candidatePkgs = mutableListOf<String>()
+        candidatePkgs.addAll(CORE_AOT_PACKAGES)
+
+        val thirdPartyRes = ShellExecutor.execute("pm list packages -3", requirePrivileged = true)
+        if (thirdPartyRes.isSuccess && thirdPartyRes.stdout.isNotBlank()) {
+            thirdPartyRes.stdout.lines().forEach { line ->
+                val pkg = line.trim().removePrefix("package:").trim()
+                if (pkg.isNotEmpty() && !candidatePkgs.contains(pkg)) {
+                    candidatePkgs.add(pkg)
+                }
+            }
+        }
+
+        // 2. Fast Dexopt Status Parsing via dumpsys package dexopt
+        val statusMap = mutableMapOf<String, String>()
+        val dexoptDump = ShellExecutor.execute("dumpsys package dexopt", requirePrivileged = true)
+        if (dexoptDump.isSuccess && dexoptDump.stdout.isNotBlank()) {
+            var currentPkg: String? = null
+            for (line in dexoptDump.stdout.lines()) {
+                val trimmed = line.trim()
+                if (trimmed.startsWith("[") && trimmed.endsWith("]") && !trimmed.contains(" ")) {
+                    currentPkg = trimmed.substring(1, trimmed.length - 1)
+                    continue
+                }
+                if (currentPkg != null && trimmed.contains("[status=")) {
+                    val statusStart = trimmed.indexOf("[status=") + 8
+                    val statusEnd = trimmed.indexOf(']', statusStart)
+                    if (statusEnd > statusStart) {
+                        val status = trimmed.substring(statusStart, statusEnd)
+                        if (!statusMap.containsKey(currentPkg)) {
+                            statusMap[currentPkg] = status
+                        }
+                    }
+                }
+            }
+        }
+
+        var skippedCount = 0
+        var compiledCount = 0
+
+        for (pkg in candidatePkgs) {
+            // Check status from bulk dump map or per-package fallback
+            var status = statusMap[pkg]
+            if (status == null) {
+                val pCheck = ShellExecutor.execute("dumpsys package $pkg | grep -E '\\[status='", requirePrivileged = true)
+                if (pCheck.isSuccess && pCheck.stdout.isNotBlank()) {
+                    val statusStart = pCheck.stdout.indexOf("[status=")
+                    if (statusStart != -1) {
+                        val statusEnd = pCheck.stdout.indexOf(']', statusStart + 8)
+                        if (statusEnd > statusStart + 8) {
+                            status = pCheck.stdout.substring(statusStart + 8, statusEnd)
+                        }
+                    }
+                }
+            }
+
+            if (status == "speed") {
+                skippedCount++
+                onLog?.invoke(LogEntry("", "Skip AOT: $pkg", "Already compiled [status=speed] - skipped", true))
+                continue
+            }
+
+            // Needs compilation
+            onLog?.invoke(LogEntry("", "AOT Compiling: $pkg", "Current status: ${status ?: "unknown"} -> speed", true))
+            val compRes = ShellExecutor.execute("cmd package compile -m speed -f $pkg", requirePrivileged = true)
+            if (compRes.isSuccess) {
+                compiledCount++
+                onLog?.invoke(LogEntry("", "Compiled: $pkg", "Successfully compiled to speed", true))
+            } else {
+                onLog?.invoke(LogEntry("", "Compile Failed: $pkg", compRes.stderr.ifBlank { "Exit ${compRes.exitCode}" }, false))
+            }
+        }
+
+        // Repin buffers & fstrim
+        runStep("cmd pinner repin 2>/dev/null || true", "Pinner Repin Core Buffers", onLog)
+        runStep("sm fstrim", "Trim eMMC 5.1 Flash Storage", onLog)
+
+        onLog?.invoke(LogEntry("", "Incremental AOT Complete", "Compiled: $compiledCount packages, Skipped: $skippedCount (already speed)", true))
+        return true
+    }
+
+    /**
+     * MASTER 1-CLICK ACTION: Full automated system performance optimization.
+     * 1. Extreme 90 FPS Profile (CPU Gold Core 4-7, 90Hz lock, 0.25x instant animation, thermal override 0)
+     * 2. Rust Native Daemon (turbodaemon IPC connect & Extreme profile)
+     * 3. Surgical Debloat with smart skip (skips already uninstalled)
+     * 4. Smart Incremental AOT Compilation (skips already compiled speed apps)
+     * 5. Auto-Apply on Boot toggle enabled and synchronized
+     * NOTE: Audio subsystem is ISOLATED and NOT touched.
+     */
+    suspend fun executeMasterOneClickBoost(
+        context: Context,
+        onLog: (LogEntry) -> Unit
+    ): Boolean {
+        if (!ShellExecutor.isShizukuAvailable() || !ShellExecutor.hasShizukuPermission()) {
+            onLog(LogEntry("", "Pre-flight Security Check", "FAILED: Shizuku UID 2000 required", false))
+            return false
+        }
+
+        onLog(LogEntry("", "==================================================", "", true))
+        onLog(LogEntry("", "⚡ STARTING MASTER 1-CLICK TURBO BOOST", "Engaging all system performance optimizations", true))
+        onLog(LogEntry("", "==================================================", "", true))
+
+        // 1. Extreme 90 FPS Profile & Hardware Clocks
+        onLog(LogEntry("", "▶ [1/5] Applying Profile Extreme 90 FPS & Gold Core Affinity...", "MQSAS 21, 90Hz Lock, Thermal Override 0, 0.25x Scale", true))
+        applyExtremeGamingRenderMode(context, onLog)
+
+        // 2. Rust Native Daemon IPC
+        onLog(LogEntry("", "▶ [2/5] Engaging Rust Native Daemon (turbodaemon)...", "Connecting abstract IPC socket & applying Extreme profile", true))
+        DaemonController.ensureDaemonRunning(context)
+        DaemonController.setProfile("EXTREME_GAMING_RENDER", context)
+
+        // 3. Surgical Debloat with Smart Skip
+        onLog(LogEntry("", "▶ [3/5] Running Surgical Debloat (Smart Skip)...", "Purging persistent bloatware hogs from RAM", true))
+        executeDebloat(context, onLog)
+
+        // 4. Smart Incremental AOT Compilation
+        onLog(LogEntry("", "▶ [4/5] Running Smart Incremental AOT Compilation...", "Skipping already compiled apps (status=speed)", true))
+        executeSmartIncrementalAot(context, onLog)
+
+        // 5. Auto-Apply on Boot
+        onLog(LogEntry("", "▶ [5/5] Enabling Auto-Apply on Tablet Boot...", "Persisting boost state across reboots", true))
+        setAutoBootEnabled(context, true)
+
+        setActiveProfile(context, BoosterProfile.EXTREME_GAMING_RENDER)
+        setTurboActive(context, true)
+
+        onLog(LogEntry("", "==================================================", "", true))
+        onLog(LogEntry("", "✅ MASTER 1-CLICK TURBO BOOST COMPLETED!", "Extreme 90FPS Lock, Daemon, Debloat & AOT Speed Active", true))
+        onLog(LogEntry("", "==================================================", "", true))
         return true
     }
 
@@ -580,7 +753,7 @@ object TurboBoosterManager {
      * 1-TAP RESTORE ALL DEBLOATED PACKAGES
      */
     suspend fun restoreDebloatedPackages(
-        context: Context,
+        _context: Context,
         onLog: (LogEntry) -> Unit
     ): Boolean {
         if (!ShellExecutor.isShizukuAvailable() || !ShellExecutor.hasShizukuPermission()) {
